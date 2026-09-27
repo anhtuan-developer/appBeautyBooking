@@ -31,7 +31,6 @@ async function getBySalonId({ salonId, search = "", page = 1, limit = 10 }) {
             SELECT
                 EmployeeId,
                 SalonId,
-                UserId,
                 FullName,
                 Phone,
                 AvatarUrl,
@@ -79,7 +78,6 @@ async function getById(employeeId) {
             SELECT
                 e.EmployeeId,
                 e.SalonId,
-                e.UserId,
                 e.FullName,
                 e.Phone,
                 e.AvatarUrl,

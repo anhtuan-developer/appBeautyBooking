@@ -5,23 +5,28 @@ function positiveInt(value) {
     return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-function pageValue(value, fallback) {
-    const n = Number(value);
-    return Number.isInteger(n) && n >= 1 ? n : fallback;
-}
+function parsePagination(req, res) {
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 10);
 
-function limitValue(value, fallback = 10) {
-    const n = Number(value);
-    if (!Number.isInteger(n) || n < 1) return fallback;
-    return Math.min(n, 50);
+    if (!Number.isInteger(page) || page < 1) {
+        res.status(400).json({ success: false, message: "page không hợp lệ." });
+        return null;
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+        res.status(400).json({ success: false, message: "limit phải từ 1 đến 50." });
+        return null;
+    }
+    return { page, limit };
 }
 
 async function getBySalonId(req, res) {
     const salonId = positiveInt(req.params.salonId);
     if (!salonId) return res.status(400).json({ success: false, message: "salonId không hợp lệ." });
 
-    const page = pageValue(req.query.page, 1);
-    const limit = limitValue(req.query.limit);
+    const pagination = parsePagination(req, res);
+    if (!pagination) return;
+    const { page, limit } = pagination;
     const search = String(req.query.search || "").trim().slice(0, 100);
 
     try {

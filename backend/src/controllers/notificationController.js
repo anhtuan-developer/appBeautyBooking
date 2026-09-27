@@ -4,13 +4,16 @@ const serviceMessages = {
     INVALID_ID: "ID không hợp lệ.",
     INVALID_NOTIFICATION: "Thông tin thông báo không hợp lệ.",
     NOTIFICATION_TOO_LONG: "Nội dung thông báo vượt quá giới hạn cho phép.",
-    NOTIFICATION_NOT_FOUND: "Không tìm thấy thông báo hoặc thông báo không thuộc tài khoản của bạn."
+    NOTIFICATION_NOT_FOUND: "Không tìm thấy thông báo hoặc thông báo không thuộc tài khoản của bạn.",
+    INVALID_PAGINATION: "page phải >= 1 và limit phải từ 1 đến 50."
 };
 
 async function getMyNotifications(req, res) {
     try {
         const unreadOnly = String(req.query.unreadOnly || "false").toLowerCase() === "true";
-        const result = await notificationService.getMyNotifications(req.user.userId, { unreadOnly });
+        const page = Number(req.query.page || 1);
+        const limit = Number(req.query.limit || 20);
+        const result = await notificationService.getMyNotifications(req.user.userId, { unreadOnly, page, limit });
 
         return res.status(200).json({
             success: true,

@@ -66,7 +66,7 @@ async function login({ email, password }) {
         { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
 
-    return { accessToken: token, token, user: publicUser(user) };
+    return { accessToken: token, user: publicUser(user) };
 }
 
 async function getCurrentUser(userId) {

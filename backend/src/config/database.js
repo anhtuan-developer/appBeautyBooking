@@ -4,14 +4,12 @@ require("dotenv").config();
 const config = {
     server: process.env.DB_SERVER,
     database: process.env.DB_DATABASE,
-
     options: {
         trustedConnection: true,
-        trustServerCertificate: true,
-        encrypt: false
+        trustServerCertificate: String(process.env.DB_TRUST_SERVER_CERTIFICATE || "true").toLowerCase() === "true",
+        encrypt: String(process.env.DB_ENCRYPT || "false").toLowerCase() === "true"
     },
-
-    driver: "ODBC Driver 18 for SQL Server"
+    driver: process.env.DB_DRIVER || "ODBC Driver 18 for SQL Server"
 };
 
 const poolPromise = new sql.ConnectionPool(config)
@@ -27,7 +25,4 @@ const poolPromise = new sql.ConnectionPool(config)
         throw error;
     });
 
-module.exports = {
-    sql,
-    poolPromise
-};
+module.exports = { sql, poolPromise };

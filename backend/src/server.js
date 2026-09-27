@@ -17,7 +17,8 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
 app.disable("x-powered-by");
-app.use(cors());
+const corsOrigin = String(process.env.CORS_ORIGIN || "").trim();
+app.use(cors(corsOrigin ? { origin: corsOrigin.split(",").map((value) => value.trim()).filter(Boolean) } : undefined));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 

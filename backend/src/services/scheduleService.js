@@ -94,6 +94,28 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
         throw error;
     }
 
+    const nowResult = await pool.request().query(`
+        SELECT
+            YEAR(CONVERT(date, SYSDATETIME())) * 10000
+                + MONTH(CONVERT(date, SYSDATETIME())) * 100
+                + DAY(CONVERT(date, SYSDATETIME())) AS TodayDateKey,
+            CONVERT(time(0), SYSDATETIME()) AS CurrentTime;
+    `);
+    const now = nowResult.recordset[0];
+    const requestedDate = date.split("-").map(Number);
+    const requestedDateKey = requestedDate[0] * 10000 + requestedDate[1] * 100 + requestedDate[2];
+    const todayKey = Number(now.TodayDateKey);
+
+    if (requestedDateKey < todayKey) {
+        return {
+            employee: { employeeId: employee.EmployeeId, fullName: employee.FullName },
+            service: null,
+            date,
+            dayOfWeek,
+            slots: []
+        };
+    }
+
     const serviceResult = await pool.request()
         .input("ServiceId", sql.Int, serviceId)
         .input("SalonId", sql.Int, employee.SalonId)
@@ -159,6 +181,9 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
 
         for (let start = scheduleStart; start + duration <= scheduleEnd; start += 30) {
             const end = start + duration;
+            const currentTimeText = now.CurrentTime == null ? null : String(now.CurrentTime).substring(0, 5);
+            const currentMinutes = currentTimeText ? toMinutes(currentTimeText) : null;
+            if (requestedDateKey === todayKey && currentMinutes !== null && start <= currentMinutes) continue;
             const overlapsBooking = bookings.some((booking) => start < booking.end && end > booking.start);
             if (!overlapsBooking) {
                 slots.push({

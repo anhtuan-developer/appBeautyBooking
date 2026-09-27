@@ -165,12 +165,14 @@ async function createBooking({
             .input("EmployeeId", sql.Int, normalizedEmployeeId)
             .query(`
                 SELECT TOP 1
-                    EmployeeId,
-                    SalonId,
-                    FullName,
-                    IsActive
-                FROM Employees
-                WHERE EmployeeId = @EmployeeId;
+                    e.EmployeeId,
+                    e.SalonId,
+                    e.FullName,
+                    e.IsActive,
+                    s.IsActive AS SalonIsActive
+                FROM Employees e
+                INNER JOIN Salons s ON s.SalonId = e.SalonId
+                WHERE e.EmployeeId = @EmployeeId;
             `);
 
         if (employeeResult.recordset.length === 0) {
@@ -183,6 +185,12 @@ async function createBooking({
 
         if (!employee.IsActive) {
             const error = new Error("EMPLOYEE_INACTIVE");
+            error.statusCode = 409;
+            throw error;
+        }
+
+        if (!employee.SalonIsActive) {
+            const error = new Error("SALON_INACTIVE");
             error.statusCode = 409;
             throw error;
         }

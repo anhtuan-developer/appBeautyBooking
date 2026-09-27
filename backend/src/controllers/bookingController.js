@@ -7,6 +7,7 @@ const serviceMessages = {
     INVALID_BOOKING_ID: "bookingId không hợp lệ.",
     EMPLOYEE_NOT_FOUND: "Không tìm thấy nhân viên.",
     EMPLOYEE_INACTIVE: "Nhân viên hiện không nhận lịch.",
+    SALON_INACTIVE: "Salon hiện không hoạt động.",
     SERVICE_NOT_FOUND: "Không tìm thấy dịch vụ hoặc dịch vụ không thuộc salon của nhân viên.",
     SERVICE_INACTIVE: "Dịch vụ hiện không hoạt động.",
     BOOKING_CROSSES_MIDNIGHT: "Thời lượng dịch vụ vượt quá cuối ngày và không thể đặt lịch.",

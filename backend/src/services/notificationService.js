@@ -38,7 +38,7 @@ async function createNotification({ userId, title, message, type }) {
         throw error;
     }
 
-    if (normalizedTitle.length > 255 || normalizedMessage.length > 1000 || normalizedType.length > 50) {
+    if (normalizedTitle.length > 200 || normalizedMessage.length > 1000 || normalizedType.length > 50) {
         const error = new Error("NOTIFICATION_TOO_LONG");
         error.statusCode = 400;
         throw error;
@@ -110,45 +110,57 @@ async function createNotifications(notifications) {
     return created;
 }
 
-async function getMyNotifications(userId, { unreadOnly = false } = {}) {
+async function getMyNotifications(userId, { unreadOnly = false, page = 1, limit = 20 } = {}) {
     const normalizedUserId = normalizeId(userId);
+    const normalizedPage = Number(page);
+    const normalizedLimit = Number(limit);
     if (!normalizedUserId) {
         const error = new Error("INVALID_ID");
         error.statusCode = 400;
         throw error;
     }
+    if (!Number.isInteger(normalizedPage) || normalizedPage < 1 ||
+        !Number.isInteger(normalizedLimit) || normalizedLimit < 1 || normalizedLimit > 50) {
+        const error = new Error("INVALID_PAGINATION");
+        error.statusCode = 400;
+        throw error;
+    }
 
     const pool = await poolPromise;
-    const request = pool
-        .request()
-        .input("UserId", sql.Int, normalizedUserId);
+    const offset = (normalizedPage - 1) * normalizedLimit;
+    const request = pool.request()
+        .input("UserId", sql.Int, normalizedUserId)
+        .input("Offset", sql.Int, offset)
+        .input("Limit", sql.Int, normalizedLimit);
 
     const unreadCondition = unreadOnly ? "AND IsRead = 0" : "";
 
     const result = await request.query(`
         SELECT
-            NotificationId,
-            UserId,
-            Title,
-            Message,
-            Type,
-            IsRead,
-            CreatedAt
+            NotificationId, UserId, Title, Message, Type, IsRead, CreatedAt,
+            COUNT(*) OVER() AS TotalCount
         FROM Notifications
         WHERE UserId = @UserId
           ${unreadCondition}
-        ORDER BY CreatedAt DESC, NotificationId DESC;
+        ORDER BY CreatedAt DESC, NotificationId DESC
+        OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY;
     `);
 
-    const items = result.recordset.map(normalizeNotification);
+    const total = result.recordset.length > 0 ? Number(result.recordset[0].TotalCount) : 0;
+    const items = result.recordset.map(({ TotalCount, ...item }) => normalizeNotification(item));
 
     return {
-        total: items.length,
+        total,
         unread: items.filter((item) => !item.isRead).length,
-        items
+        items,
+        pagination: {
+            page: normalizedPage,
+            limit: normalizedLimit,
+            total,
+            totalPages: total === 0 ? 0 : Math.ceil(total / normalizedLimit)
+        }
     };
 }
-
 async function markAsRead(userId, notificationId) {
     const normalizedUserId = normalizeId(userId);
     const normalizedNotificationId = normalizeId(notificationId);

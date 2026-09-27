@@ -76,7 +76,6 @@ async function getById(salonId) {
     const result = await request.query(`
         SELECT
             s.SalonId,
-            s.OwnerUserId,
             s.SalonName,
             s.Address,
             s.Phone,
@@ -93,7 +92,7 @@ async function getById(salonId) {
         WHERE s.SalonId = @SalonId
           AND s.IsActive = 1
         GROUP BY
-            s.SalonId, s.OwnerUserId, s.SalonName, s.Address, s.Phone,
+            s.SalonId, s.SalonName, s.Address, s.Phone,
             s.Description, s.ImageUrl, s.Latitude, s.Longitude,
             s.IsActive, s.CreatedAt;
 
