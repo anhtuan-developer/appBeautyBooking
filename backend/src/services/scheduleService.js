@@ -15,24 +15,14 @@ function timeText(minutes) {
 }
 
 function dateOnly(value) {
-    // Không dùng new Date("YYYY-MM-DDT00:00:00") + toISOString()
-    // vì timezone có thể làm ngày bị lùi 1 ngày.
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return null;
-    }
-
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
     const [year, month, day] = value.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
-
-    // Kiểm tra ngày thực sự tồn tại, ví dụ 2026-02-30 phải bị từ chối.
     if (
         date.getUTCFullYear() !== year ||
         date.getUTCMonth() !== month - 1 ||
         date.getUTCDate() !== day
-    ) {
-        return null;
-    }
-
+    ) return null;
     return date;
 }
 
@@ -40,7 +30,27 @@ function dayOfWeekMondayFirst(date) {
     return ((date.getUTCDay() + 6) % 7) + 1;
 }
 
+async function getEmployee(employeeId) {
+    const pool = await poolPromise;
+    const result = await pool.request()
+        .input("EmployeeId", sql.Int, employeeId)
+        .query(`
+            SELECT e.EmployeeId, e.SalonId, e.FullName, e.IsActive, s.IsActive AS SalonIsActive
+            FROM Employees e
+            INNER JOIN Salons s ON s.SalonId = e.SalonId
+            WHERE e.EmployeeId = @EmployeeId;
+        `);
+    return result.recordset[0] || null;
+}
+
 async function getByEmployeeId(employeeId) {
+    const employee = await getEmployee(employeeId);
+    if (!employee || !employee.IsActive || !employee.SalonIsActive) {
+        const error = new Error("EMPLOYEE_NOT_FOUND");
+        error.code = "EMPLOYEE_NOT_FOUND";
+        throw error;
+    }
+
     const pool = await poolPromise;
     const result = await pool.request()
         .input("EmployeeId", sql.Int, employeeId)
@@ -54,10 +64,16 @@ async function getByEmployeeId(employeeId) {
                 IsWorking
             FROM EmployeeSchedules
             WHERE EmployeeId = @EmployeeId
-              AND IsWorking = 1
             ORDER BY DayOfWeek, StartTime;
         `);
-    return result.recordset;
+
+    return {
+        employee: {
+            employeeId: employee.EmployeeId,
+            fullName: employee.FullName
+        },
+        schedules: result.recordset
+    };
 }
 
 async function getAvailableSlots({ employeeId, serviceId, date }) {
@@ -70,23 +86,13 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
 
     const dayOfWeek = dayOfWeekMondayFirst(selectedDate);
     const pool = await poolPromise;
+    const employee = await getEmployee(employeeId);
 
-    const employeeResult = await pool.request()
-        .input("EmployeeId", sql.Int, employeeId)
-        .query(`
-            SELECT EmployeeId, SalonId, FullName
-            FROM Employees
-            WHERE EmployeeId = @EmployeeId
-              AND IsActive = 1;
-        `);
-
-    if (employeeResult.recordset.length === 0) {
+    if (!employee || !employee.IsActive || !employee.SalonIsActive) {
         const error = new Error("EMPLOYEE_NOT_FOUND");
         error.code = "EMPLOYEE_NOT_FOUND";
         throw error;
     }
-
-    const employee = employeeResult.recordset[0];
 
     const serviceResult = await pool.request()
         .input("ServiceId", sql.Int, serviceId)
@@ -107,6 +113,11 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
 
     const service = serviceResult.recordset[0];
     const duration = Number(service.DurationMinutes);
+    if (!Number.isInteger(duration) || duration <= 0) {
+        const error = new Error("INVALID_SERVICE_DURATION");
+        error.code = "INVALID_SERVICE_DURATION";
+        throw error;
+    }
 
     const scheduleResult = await pool.request()
         .input("EmployeeId", sql.Int, employeeId)
@@ -117,6 +128,7 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
             WHERE EmployeeId = @EmployeeId
               AND DayOfWeek = @DayOfWeek
               AND IsWorking = 1
+              AND StartTime < EndTime
             ORDER BY StartTime;
         `);
 
@@ -124,11 +136,11 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
         .input("EmployeeId", sql.Int, employeeId)
         .input("BookingDate", sql.Date, date)
         .query(`
-            SELECT StartTime, EndTime, Status
+            SELECT StartTime, EndTime
             FROM Bookings
             WHERE EmployeeId = @EmployeeId
               AND BookingDate = @BookingDate
-              AND Status NOT IN ('CANCELLED', 'REJECTED');
+              AND Status IN ('PENDING', 'CONFIRMED', 'COMPLETED');
         `);
 
     const bookings = bookingResult.recordset
@@ -143,18 +155,11 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
     for (const schedule of scheduleResult.recordset) {
         const scheduleStart = toMinutes(schedule.StartTime);
         const scheduleEnd = toMinutes(schedule.EndTime);
-
-        if (scheduleStart === null || scheduleEnd === null || scheduleStart >= scheduleEnd) {
-            continue;
-        }
+        if (scheduleStart === null || scheduleEnd === null || scheduleStart >= scheduleEnd) continue;
 
         for (let start = scheduleStart; start + duration <= scheduleEnd; start += 30) {
             const end = start + duration;
-
-            const overlapsBooking = bookings.some((booking) =>
-                start < booking.end && end > booking.start
-            );
-
+            const overlapsBooking = bookings.some((booking) => start < booking.end && end > booking.start);
             if (!overlapsBooking) {
                 slots.push({
                     startTime: timeText(start),
@@ -166,10 +171,7 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
     }
 
     return {
-        employee: {
-            employeeId: employee.EmployeeId,
-            fullName: employee.FullName
-        },
+        employee: { employeeId: employee.EmployeeId, fullName: employee.FullName },
         service: {
             serviceId: service.ServiceId,
             serviceName: service.ServiceName,
@@ -182,7 +184,4 @@ async function getAvailableSlots({ employeeId, serviceId, date }) {
     };
 }
 
-module.exports = {
-    getByEmployeeId,
-    getAvailableSlots
-};
+module.exports = { getByEmployeeId, getAvailableSlots };
