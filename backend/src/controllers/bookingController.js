@@ -13,6 +13,10 @@ const serviceMessages = {
     OUTSIDE_WORKING_HOURS: "Thời gian đặt nằm ngoài lịch làm việc của nhân viên.",
     SLOT_ALREADY_BOOKED: "Khung giờ này vừa được người khác đặt. Vui lòng chọn khung giờ khác.",
     BOOKING_LOCK_FAILED: "Khung giờ đang được xử lý bởi một yêu cầu khác. Vui lòng thử lại.",
+    BOOKING_IN_PAST: "Không thể đặt lịch vào thời gian đã qua.",
+    NOTE_TOO_LONG: "Ghi chú không được vượt quá 500 ký tự.",
+    INVALID_PAGINATION: "page phải >= 1 và limit phải từ 1 đến 50.",
+    BOOKING_NOT_FINISHED: "Chỉ có thể hoàn thành booking sau khi thời gian dịch vụ đã kết thúc.",
     BOOKING_NOT_FOUND: "Không tìm thấy booking hoặc booking không thuộc tài khoản của bạn.",
     BOOKING_NOT_PENDING: "Chỉ booking đang ở trạng thái PENDING mới được hủy.",
     INVALID_BOOKING_STATUS: "Trạng thái booking không hợp lệ.",
@@ -53,7 +57,11 @@ async function createBooking(req, res) {
 
 async function getMyBookings(req, res) {
     try {
-        const result = await bookingService.getMyBookings(req.user.userId);
+        const result = await bookingService.getMyBookings(req.user.userId, {
+            page: req.query.page,
+            limit: req.query.limit,
+            status: req.query.status
+        });
 
         return res.status(200).json({
             success: true,

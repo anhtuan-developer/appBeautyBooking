@@ -97,6 +97,13 @@ async function createBooking({
         throw error;
     }
 
+    const normalizedNote = note == null ? null : String(note).trim();
+    if (normalizedNote && normalizedNote.length > 500) {
+        const error = new Error("NOTE_TOO_LONG");
+        error.statusCode = 400;
+        throw error;
+    }
+
     const pool = await poolPromise;
     const transaction = new sql.Transaction(pool);
 
@@ -104,6 +111,28 @@ async function createBooking({
         // SERIALIZABLE protects the transaction's reads. sp_getapplock additionally
         // serializes all booking attempts for the same employee + date.
         await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+        const nowResult = await transaction
+            .request()
+            .input("BookingDate", sql.VarChar(10), parsedDate.value)
+            .input("StartTime", sql.VarChar(8), normalizedStartTime)
+            .query(`
+                SELECT
+                    CAST(SYSDATETIME() AS date) AS TodayDate,
+                    CAST(SYSDATETIME() AS time) AS CurrentTime,
+                    CASE
+                        WHEN @BookingDate < CONVERT(varchar(10), CAST(SYSDATETIME() AS date), 23) THEN 1
+                        WHEN @BookingDate = CONVERT(varchar(10), CAST(SYSDATETIME() AS date), 23)
+                             AND @StartTime <= CONVERT(varchar(8), CAST(SYSDATETIME() AS time), 108) THEN 1
+                        ELSE 0
+                    END AS IsPast;
+            `);
+
+        if (Number(nowResult.recordset[0]?.IsPast) === 1) {
+            const error = new Error("BOOKING_IN_PAST");
+            error.statusCode = 409;
+            throw error;
+        }
 
         const lockResource = `BeautyBooking:Employee:${normalizedEmployeeId}:Date:${parsedDate.value}`;
 
@@ -270,7 +299,7 @@ async function createBooking({
             .input("StartTime", sql.VarChar(8), normalizedStartTime)
             .input("EndTime", sql.VarChar(8), normalizedEndTime)
             .input("Status", sql.VarChar(20), "PENDING")
-            .input("Note", sql.NVarChar(500), note ? String(note).trim() : null)
+            .input("Note", sql.NVarChar(500), normalizedNote)
             .query(`
                 INSERT INTO Bookings
                 (
@@ -353,8 +382,13 @@ async function createBooking({
 }
 
 
-async function getMyBookings(userId) {
+async function getMyBookings(userId, { page = 1, limit = 10, status = null } = {}) {
     const normalizedUserId = Number(userId);
+    const normalizedPage = Number(page);
+    const normalizedLimit = Number(limit);
+    const normalizedStatus = status == null || String(status).trim() === ""
+        ? null
+        : String(status).trim().toUpperCase();
 
     if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
         const error = new Error("INVALID_ID");
@@ -362,40 +396,61 @@ async function getMyBookings(userId) {
         throw error;
     }
 
+    if (!Number.isInteger(normalizedPage) || normalizedPage < 1 ||
+        !Number.isInteger(normalizedLimit) || normalizedLimit < 1 || normalizedLimit > 50) {
+        const error = new Error("INVALID_PAGINATION");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'];
+    if (normalizedStatus && !validStatuses.includes(normalizedStatus)) {
+        const error = new Error("INVALID_BOOKING_STATUS");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const offset = (normalizedPage - 1) * normalizedLimit;
     const pool = await poolPromise;
-    const result = await pool
-        .request()
+    const request = pool.request()
         .input("UserId", sql.Int, normalizedUserId)
-        .query(`
-            SELECT
-                b.BookingId,
-                b.UserId,
-                b.SalonId,
-                s.SalonName,
-                b.ServiceId,
-                dv.ServiceName,
-                dv.Price,
-                dv.DurationMinutes,
-                b.EmployeeId,
-                e.FullName AS EmployeeName,
-                b.BookingDate,
-                b.StartTime,
-                b.EndTime,
-                b.Status,
-                b.Note,
-                b.CreatedAt,
-                b.UpdatedAt
-            FROM Bookings b
-            INNER JOIN Salons s ON s.SalonId = b.SalonId
-            INNER JOIN dichvu dv ON dv.ServiceId = b.ServiceId
-            INNER JOIN Employees e ON e.EmployeeId = b.EmployeeId
-            WHERE b.UserId = @UserId
-            ORDER BY b.BookingDate DESC, b.StartTime DESC, b.BookingId DESC;
-        `);
+        .input("Offset", sql.Int, offset)
+        .input("Limit", sql.Int, normalizedLimit)
+        .input("Status", sql.VarChar(20), normalizedStatus);
+
+    const result = await request.query(`
+        SELECT
+            b.BookingId, b.UserId, b.SalonId, s.SalonName,
+            b.ServiceId, dv.ServiceName, dv.Price, dv.DurationMinutes,
+            b.EmployeeId, e.FullName AS EmployeeName,
+            b.BookingDate, b.StartTime, b.EndTime, b.Status, b.Note,
+            b.CreatedAt, b.UpdatedAt,
+            COUNT(*) OVER() AS TotalCount
+        FROM Bookings b
+        INNER JOIN Salons s ON s.SalonId = b.SalonId
+        INNER JOIN dichvu dv ON dv.ServiceId = b.ServiceId
+        INNER JOIN Employees e ON e.EmployeeId = b.EmployeeId
+        WHERE b.UserId = @UserId
+          AND (@Status IS NULL OR b.Status = @Status)
+        ORDER BY b.BookingDate DESC, b.StartTime DESC, b.BookingId DESC
+        OFFSET @Offset ROWS FETCH NEXT @Limit ROWS ONLY;
+    `);
+
+    const total = result.recordset.length > 0
+        ? Number(result.recordset[0].TotalCount)
+        : 0;
+
+    const items = result.recordset.map(({ TotalCount, ...item }) => item);
 
     return {
-        total: result.recordset.length,
-        items: result.recordset
+        items,
+        pagination: {
+            page: normalizedPage,
+            limit: normalizedLimit,
+            total,
+            totalPages: total === 0 ? 0 : Math.ceil(total / normalizedLimit)
+        },
+        ...(normalizedStatus ? { status: normalizedStatus } : {})
     };
 }
 
@@ -664,6 +719,30 @@ async function updateBookingStatus({ userId, role, bookingId, status }) {
             const error = new Error("INVALID_STATUS_TRANSITION");
             error.statusCode = 409;
             throw error;
+        }
+
+        if (normalizedStatus === 'COMPLETED') {
+            const completionCheck = await transaction
+                .request()
+                .input("BookingId", sql.Int, normalizedBookingId)
+                .query(`
+                    SELECT CASE
+                        WHEN DATEADD(
+                            MINUTE,
+                            DATEDIFF(MINUTE, CAST('00:00:00' AS time), EndTime),
+                            CAST(BookingDate AS datetime2)
+                        ) <= SYSDATETIME() THEN 1
+                        ELSE 0
+                    END AS CanComplete
+                    FROM Bookings
+                    WHERE BookingId = @BookingId;
+                `);
+
+            if (Number(completionCheck.recordset[0]?.CanComplete) !== 1) {
+                const error = new Error("BOOKING_NOT_FINISHED");
+                error.statusCode = 409;
+                throw error;
+            }
         }
 
         const updateResult = await transaction
