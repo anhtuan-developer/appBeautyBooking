@@ -474,13 +474,6 @@ VALUES
 );
 GO
 
-SELECT
-    EmployeeId,
-    SalonId,
-    UserId,
-    FullName,
-    Specialization
-FROM Employees;
 
 /*lịch làm việc*/
 INSERT INTO EmployeeSchedules
