@@ -1,13 +1,13 @@
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, router } from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
@@ -35,22 +35,24 @@ export default function HomeScreen() {
   }
 
   /**
-   * Trường hợp bất thường:
-   * không có user nhưng vẫn vào Home.
-   *
-   * Chuyển về Login.
+   * Trường hợp không có user
+   * nhưng vẫn truy cập Home
    */
   if (!user) {
-  return <Redirect href="/login" />;
-}
+    return <Redirect href="/login" />;
+  }
 
   /**
    * Đăng xuất
    */
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
 
-    router.replace('/login');
+      router.replace('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -60,7 +62,9 @@ export default function HomeScreen() {
       >
         <View style={styles.container}>
 
-          {/* Header */}
+          {/* =========================
+              HEADER
+          ========================= */}
           <View style={styles.header}>
             <View>
               <Text style={styles.welcomeText}>
@@ -79,7 +83,9 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Welcome Card */}
+          {/* =========================
+              WELCOME CARD
+          ========================= */}
           <View style={styles.welcomeCard}>
             <Text style={styles.welcomeTitle}>
               Chào mừng đến BeautyBooking
@@ -91,12 +97,15 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* User information */}
+          {/* =========================
+              USER INFORMATION
+          ========================= */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>
               Thông tin tài khoản
             </Text>
 
+            {/* Họ tên */}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>
                 Họ tên
@@ -109,6 +118,7 @@ export default function HomeScreen() {
 
             <View style={styles.divider} />
 
+            {/* Email */}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>
                 Email
@@ -121,6 +131,7 @@ export default function HomeScreen() {
 
             <View style={styles.divider} />
 
+            {/* Số điện thoại */}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>
                 Số điện thoại
@@ -133,6 +144,7 @@ export default function HomeScreen() {
 
             <View style={styles.divider} />
 
+            {/* Vai trò */}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>
                 Vai trò
@@ -145,6 +157,7 @@ export default function HomeScreen() {
 
             <View style={styles.divider} />
 
+            {/* Trạng thái */}
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>
                 Trạng thái
@@ -158,7 +171,24 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Logout */}
+          {/* =========================
+              KHÁM PHÁ SALON
+          ========================= */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.salonButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => router.push('/salons')}
+          >
+            <Text style={styles.salonButtonText}>
+              Khám phá Salon
+            </Text>
+          </Pressable>
+
+          {/* =========================
+              ĐĂNG XUẤT
+          ========================= */}
           <Pressable
             style={({ pressed }) => [
               styles.logoutButton,
@@ -177,6 +207,12 @@ export default function HomeScreen() {
   );
 }
 
+/**
+ * =========================
+ * STYLES
+ * =========================
+ */
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -187,6 +223,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F7FC',
   },
 
   loadingText: {
@@ -205,6 +242,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     padding: 24,
   },
+
+  /* =========================
+     HEADER
+  ========================= */
 
   header: {
     flexDirection: 'row',
@@ -240,6 +281,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
+  /* =========================
+     WELCOME CARD
+  ========================= */
+
   welcomeCard: {
     backgroundColor: '#8B5CF6',
     borderRadius: 20,
@@ -259,6 +304,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+
+  /* =========================
+     ACCOUNT CARD
+  ========================= */
 
   card: {
     backgroundColor: '#FFFFFF',
@@ -320,6 +369,29 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
 
+  /* =========================
+     SALON BUTTON
+  ========================= */
+
+  salonButton: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  salonButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* =========================
+     LOGOUT BUTTON
+  ========================= */
+
   logoutButton: {
     height: 52,
     borderRadius: 12,
@@ -334,6 +406,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+
+  /* =========================
+     BUTTON PRESSED
+  ========================= */
 
   buttonPressed: {
     opacity: 0.65,

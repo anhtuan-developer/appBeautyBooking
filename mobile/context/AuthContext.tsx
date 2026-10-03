@@ -1,5 +1,3 @@
-// context/AuthContext.tsx
-
 import React, {
   createContext,
   ReactNode,
@@ -18,6 +16,7 @@ import {
 } from '@/services/authService';
 
 import {
+  getStoredToken,
   removeToken,
   saveToken,
 } from '@/lib/api';
@@ -111,16 +110,23 @@ export function AuthProvider({
   const refreshUser = useCallback(
     async () => {
       try {
-        const response = await getMe();
+        const token =
+          await getStoredToken();
 
-        
+        if (!token) {
+          setUser(null);
+          return;
+        }
+
+        const response =
+          await getMe();
 
         setUser(response.data);
-      } catch {
-        /**
-         * Token không hợp lệ
-         * hoặc đã hết hạn.
-         */
+      } catch (error) {
+        console.error(
+          'Restore session failed:',
+          error,
+        );
 
         await removeToken();
 
@@ -159,29 +165,31 @@ export function AuthProvider({
     email: string,
     password: string,
   ) => {
+    /**
+     * Gọi API login
+     */
     const response =
       await loginApi({
         email,
         password,
       });
 
-    
-
+    /**
+     * Lấy JWT + user
+     */
     const {
       accessToken,
       user,
     } = response.data;
 
     /**
-     * Lưu JWT token
+     * Lưu JWT
      */
-
     await saveToken(accessToken);
 
     /**
-     * Lưu thông tin user
+     * Lưu user vào state
      */
-
     setUser(user);
   };
 
@@ -192,10 +200,10 @@ export function AuthProvider({
    */
 
   const register = async (
-  data: RegisterRequest,
-) => {
-  await registerApi(data);
-};
+    data: RegisterRequest,
+  ) => {
+    await registerApi(data);
+  };
 
   /**
    * =========================
@@ -204,8 +212,14 @@ export function AuthProvider({
    */
 
   const logout = async () => {
+    /**
+     * Xóa JWT
+     */
     await removeToken();
 
+    /**
+     * Xóa user
+     */
     setUser(null);
   };
 
@@ -220,15 +234,6 @@ export function AuthProvider({
   ) => {
     const response =
       await updateProfileApi(data);
-
-    /**
-     * Backend:
-     *
-     * {
-     *   success: true,
-     *   data: user
-     * }
-     */
 
     setUser(response.data);
   };

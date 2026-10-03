@@ -364,6 +364,16 @@ VALUES
 );
 GO
 
+SELECT
+    UserId,
+    FullName,
+    Email,
+    PasswordHash,
+    Role,
+    IsActive
+FROM Users
+WHERE Email = 'test@beautybooking.com';
+
 /*thêm salons mẫu*/
 INSERT INTO Salons
 (
