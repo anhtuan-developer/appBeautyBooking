@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +10,10 @@ import {
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect, router } from 'expo-router';
+import {
+  router,
+  useRootNavigationState,
+} from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -18,6 +23,28 @@ export default function HomeScreen() {
     isLoading,
     logout,
   } = useAuth();
+
+  const rootNavigationState =
+    useRootNavigationState();
+
+  const isNavigationReady =
+    rootNavigationState?.key != null;
+
+  React.useEffect(() => {
+    if (
+      isLoading ||
+      !isNavigationReady ||
+      user
+    ) {
+      return;
+    }
+
+    router.replace('/login');
+  }, [
+    isLoading,
+    isNavigationReady,
+    user,
+  ]);
 
   /**
    * Đang khôi phục session
@@ -39,7 +66,21 @@ export default function HomeScreen() {
    * nhưng vẫn truy cập Home
    */
   if (!user) {
-    return <Redirect href="/login" />;
+    return (
+      <SafeAreaView
+        style={styles.loadingContainer}
+      >
+        <ActivityIndicator
+          size="large"
+        />
+
+        <Text
+          style={styles.loadingText}
+        >
+          Đang chuyển đến đăng nhập...
+        </Text>
+      </SafeAreaView>
+    );
   }
 
   /**

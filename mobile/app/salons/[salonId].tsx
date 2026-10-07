@@ -8,95 +8,188 @@ import {
   View,
 } from 'react-native';
 
-import { useLocalSearchParams, router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  router,
+  useLocalSearchParams,
+} from 'expo-router';
+
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 import { getSalonById } from '@/services/salonService';
+
 import {
   SalonDetail,
-  SalonEmployee,
   SalonService,
 } from '@/types/salon';
 
 export default function SalonDetailScreen() {
-  const { salonId } = useLocalSearchParams<{
+  const {
+    salonId,
+  } = useLocalSearchParams<{
     salonId: string;
   }>();
 
-  const [salon, setSalon] = useState<SalonDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [
+    salon,
+    setSalon,
+  ] = useState<SalonDetail | null>(
+    null,
+  );
 
-  const loadSalon = useCallback(async () => {
-    if (!salonId) {
-      setError('Không xác định được Salon.');
-      setIsLoading(false);
-      return;
-    }
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
 
-    try {
-      setIsLoading(true);
-      setError('');
+  const [
+    error,
+    setError,
+  ] = useState('');
 
-      const result = await getSalonById(
-        Number(salonId),
-      );
+  const loadSalon =
+    useCallback(
+      async () => {
+        if (!salonId) {
+          setError(
+            'Không xác định được Salon.',
+          );
 
-      setSalon(result.data);
-    } catch (err) {
-      console.error('Load salon detail error:', err);
+          setIsLoading(false);
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Không thể tải thông tin Salon.',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [salonId]);
+          return;
+        }
+
+        try {
+          setIsLoading(true);
+
+          setError('');
+
+          const result =
+            await getSalonById(
+              Number(salonId),
+            );
+
+          setSalon(
+            result.data,
+          );
+        } catch (err) {
+          console.error(
+            'Load salon detail error:',
+            err,
+          );
+
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Không thể tải thông tin Salon.',
+          );
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      [salonId],
+    );
 
   useEffect(() => {
     loadSalon();
   }, [loadSalon]);
 
+  /**
+   * =========================
+   * LOADING
+   * =========================
+   */
+
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View
+        style={
+          styles.center
+        }
+      >
+        <ActivityIndicator
+          size="large"
+        />
 
-        <Text style={styles.loadingText}>
-          Đang tải thông tin Salon...
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
+          Đang tải thông tin
+          Salon...
         </Text>
       </View>
     );
   }
 
-  if (error || !salon) {
+  /**
+   * =========================
+   * ERROR
+   * =========================
+   */
+
+  if (
+    error ||
+    !salon
+  ) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>
+      <View
+        style={
+          styles.center
+        }
+      >
+        <Text
+          style={
+            styles.errorTitle
+          }
+        >
           Không thể tải Salon
         </Text>
 
-        <Text style={styles.errorMessage}>
-          {error || 'Không tìm thấy Salon.'}
+        <Text
+          style={
+            styles.errorMessage
+          }
+        >
+          {error ||
+            'Không tìm thấy Salon.'}
         </Text>
 
         <Pressable
-          style={styles.retryButton}
-          onPress={loadSalon}
+          style={
+            styles.primaryButton
+          }
+          onPress={
+            loadSalon
+          }
         >
-          <Text style={styles.retryText}>
+          <Text
+            style={
+              styles.primaryButtonText
+            }
+          >
             Thử lại
           </Text>
         </Pressable>
 
         <Pressable
-          style={styles.backButton}
-          onPress={() => router.back()}
+          style={
+            styles.secondaryButton
+          }
+          onPress={() =>
+            router.back()
+          }
         >
-          <Text style={styles.backText}>
+          <Text
+            style={
+              styles.secondaryButtonText
+            }
+          >
             Quay lại
           </Text>
         </Pressable>
@@ -104,164 +197,268 @@ export default function SalonDetailScreen() {
     );
   }
 
+  /**
+   * =========================
+   * SCREEN
+   * =========================
+   */
+
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={
+        styles.container
+      }
+      contentContainerStyle={
+        styles.content
+      }
     >
-      {/* Nút quay lại */}
+      {/* BACK */}
+
       <Pressable
-        style={styles.backRow}
-        onPress={() => router.back()}
+        style={
+          styles.backRow
+        }
+        onPress={() =>
+          router.back()
+        }
       >
-        <Text style={styles.backIcon}>
+        <Text
+          style={
+            styles.backIcon
+          }
+        >
           ‹
         </Text>
 
-        <Text style={styles.backLabel}>
+        <Text
+          style={
+            styles.backLabel
+          }
+        >
           Danh sách Salon
         </Text>
       </Pressable>
 
-      {/* Ảnh Salon */}
+      {/* IMAGE */}
+
       {salon.ImageUrl ? (
         <Image
           source={{
             uri: salon.ImageUrl,
           }}
-          style={styles.salonImage}
+          style={
+            styles.salonImage
+          }
           resizeMode="cover"
         />
       ) : (
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.placeholderText}>
+        <View
+          style={
+            styles.imagePlaceholder
+          }
+        >
+          <Text
+            style={
+              styles.placeholderText
+            }
+          >
             BeautyBooking
           </Text>
         </View>
       )}
 
-      {/* Thông tin chính */}
-      <View style={styles.mainCard}>
-        <Text style={styles.salonName}>
+      {/* MAIN INFO */}
+
+      <View
+        style={
+          styles.card
+        }
+      >
+        <Text
+          style={
+            styles.salonName
+          }
+        >
           {salon.SalonName}
         </Text>
 
-        <View style={styles.ratingRow}>
-          <Text style={styles.star}>
-            ★
-          </Text>
-
-          <Text style={styles.rating}>
-            {Number(salon.AverageRating).toFixed(1)}
-          </Text>
-
-          <Text style={styles.reviewCount}>
-            ({salon.ReviewCount} đánh giá)
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoIcon}>
-            📍
-          </Text>
-
-          <Text style={styles.infoText}>
-            {salon.Address}
-          </Text>
-        </View>
+        <Text
+          style={
+            styles.address
+          }
+        >
+          📍 {salon.Address}
+        </Text>
 
         {salon.Phone && (
-          <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>
-              ☎
-            </Text>
-
-            <Text style={styles.infoText}>
-              {salon.Phone}
-            </Text>
-          </View>
+          <Text
+            style={
+              styles.phone
+            }
+          >
+            📞 {salon.Phone}
+          </Text>
         )}
 
         {salon.Description && (
-          <View style={styles.descriptionBox}>
-            <Text style={styles.sectionTitle}>
-              Giới thiệu
+          <Text
+            style={
+              styles.description
+            }
+          >
+            {salon.Description}
+          </Text>
+        )}
+
+        <View
+          style={
+            styles.statsRow
+          }
+        >
+          <View
+            style={
+              styles.stat
+            }
+          >
+            <Text
+              style={
+                styles.statValue
+              }
+            >
+              {salon.AverageRating?.toFixed(
+                1,
+              ) || '0.0'}
             </Text>
 
-            <Text style={styles.description}>
-              {salon.Description}
+            <Text
+              style={
+                styles.statLabel
+              }
+            >
+              ⭐ Đánh giá
             </Text>
           </View>
-        )}
+
+          <View
+            style={
+              styles.stat
+            }
+          >
+            <Text
+              style={
+                styles.statValue
+              }
+            >
+              {salon.ServiceCount}
+            </Text>
+
+            <Text
+              style={
+                styles.statLabel
+              }
+            >
+              Dịch vụ
+            </Text>
+          </View>
+
+          <View
+            style={
+              styles.stat
+            }
+          >
+            <Text
+              style={
+                styles.statValue
+              }
+            >
+              {salon.EmployeeCount}
+            </Text>
+
+            <Text
+              style={
+                styles.statLabel
+              }
+            >
+              Nhân viên
+            </Text>
+          </View>
+        </View>
       </View>
 
-      {/* Thống kê */}
-      <View style={styles.statsCard}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {salon.ServiceCount}
-          </Text>
+      {/* SERVICES */}
 
-          <Text style={styles.statLabel}>
-            Dịch vụ
-          </Text>
-        </View>
-
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {salon.EmployeeCount}
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Nhân viên
-          </Text>
-        </View>
-
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {salon.ReviewCount}
-          </Text>
-
-          <Text style={styles.statLabel}>
-            Đánh giá
-          </Text>
-        </View>
-      </View>
-
-      {/* Dịch vụ */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
+      <View
+        style={
+          styles.card
+        }
+      >
+        <View
+          style={
+            styles.sectionHeader
+          }
+        >
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
             Dịch vụ
           </Text>
 
-          <Text style={styles.sectionCount}>
+          <Text
+            style={
+              styles.sectionCount
+            }
+          >
             {salon.services.length}
           </Text>
         </View>
 
-        {salon.services.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Salon chưa có dịch vụ.
+        {salon.services.length ===
+        0 ? (
+          <Text
+            style={
+              styles.emptyText
+            }
+          >
+            Salon chưa có dịch
+            vụ.
           </Text>
         ) : (
           salon.services.map(
-          (service: SalonService) => (
-            <ServiceItem
-              key={service.ServiceId}
-              service={service}
-              onSelect={() => {
-                router.push({
-                  pathname: '/booking/employee',
-                  params: {
-                    salonId: String(salon.SalonId),
-                    serviceId: String(
-                      service.ServiceId,
-                      ),
+            (
+              service: SalonService,
+            ) => (
+              <ServiceItem
+                key={
+                  service.ServiceId
+                }
+                service={
+                  service
+                }
+                onSelect={() => {
+                  console.log(
+                    '➡️ Selected service:',
+                    {
+                      salonId:
+                        salon.SalonId,
+                      serviceId:
+                        service.ServiceId,
+                    },
+                  );
+
+                  router.push({
+                    pathname:
+                      '/bookings/employee',
+                    params: {
+                      salonId:
+                        String(
+                          salon.SalonId,
+                        ),
+                      serviceId:
+                        String(
+                          service.ServiceId,
+                        ),
                     },
                   });
                 }}
@@ -271,50 +468,119 @@ export default function SalonDetailScreen() {
         )}
       </View>
 
-      {/* Nhân viên */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
+      {/* EMPLOYEES */}
+
+      <View
+        style={
+          styles.card
+        }
+      >
+        <View
+          style={
+            styles.sectionHeader
+          }
+        >
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
             Nhân viên
           </Text>
 
-          <Text style={styles.sectionCount}>
+          <Text
+            style={
+              styles.sectionCount
+            }
+          >
             {salon.employees.length}
           </Text>
         </View>
 
-        {salon.employees.length === 0 ? (
-          <Text style={styles.emptyText}>
-            Salon chưa có nhân viên.
+        {salon.employees.length ===
+        0 ? (
+          <Text
+            style={
+              styles.emptyText
+            }
+          >
+            Salon chưa có nhân
+            viên.
           </Text>
         ) : (
           salon.employees.map(
-            (employee: SalonEmployee) => (
-              <EmployeeItem
-                key={employee.EmployeeId}
-                employee={employee}
-              />
+            (
+              employee,
+            ) => (
+              <View
+                key={
+                  employee.EmployeeId
+                }
+                style={
+                  styles.employeeRow
+                }
+              >
+                {employee.AvatarUrl ? (
+                  <Image
+                    source={{
+                      uri: employee.AvatarUrl,
+                    }}
+                    style={
+                      styles.avatar
+                    }
+                  />
+                ) : (
+                  <View
+                    style={
+                      styles.avatarPlaceholder
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.avatarText
+                      }
+                    >
+                      {employee.FullName
+                        .charAt(
+                          0,
+                        )
+                        .toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+
+                <View
+                  style={
+                    styles.employeeInfo
+                  }
+                >
+                  <Text
+                    style={
+                      styles.employeeName
+                    }
+                  >
+                    {
+                      employee.FullName
+                    }
+                  </Text>
+
+                  {employee.Specialization && (
+                    <Text
+                      style={
+                        styles.specialization
+                      }
+                    >
+                      {
+                        employee.Specialization
+                      }
+                    </Text>
+                  )}
+                </View>
+              </View>
             ),
           )
         )}
       </View>
-
-      {/* Nút đặt lịch */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.bookingButton,
-          pressed && styles.buttonPressed,
-        ]}
-        onPress={() => {
-          // Tạm thời chưa chuyển sang Booking.
-          // Chúng ta sẽ nối chức năng này
-          // sau khi hoàn thành Service + Employee + Schedule.
-        }}
-      >
-        <Text style={styles.bookingButtonText}>
-          Đặt lịch tại Salon này
-        </Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -334,127 +600,82 @@ function ServiceItem({
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.itemCard,
-        pressed && styles.itemPressed,
+      style={({
+        pressed,
+      }) => [
+        styles.serviceRow,
+        pressed &&
+          styles.pressed,
       ]}
       onPress={onSelect}
     >
-      {service.ImageUrl ? (
-        <Image
-          source={{
-            uri: service.ImageUrl,
-          }}
-          style={styles.serviceImage}
-        />
-      ) : (
-        <View style={styles.servicePlaceholder}>
-          <Text style={styles.servicePlaceholderText}>
-            ✂
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.itemContent}>
+      <View
+        style={
+          styles.serviceInfo
+        }
+      >
         <Text
-          style={styles.itemTitle}
-          numberOfLines={2}
+          style={
+            styles.serviceName
+          }
         >
-          {service.ServiceName}
+          {
+            service.ServiceName
+          }
         </Text>
 
         {service.Description && (
           <Text
-            style={styles.itemDescription}
+            style={
+              styles.serviceDescription
+            }
             numberOfLines={2}
           >
-            {service.Description}
+            {
+              service.Description
+            }
           </Text>
         )}
 
-        <View style={styles.itemBottomRow}>
-          <View>
-            <Text style={styles.price}>
-              {formatMoney(service.Price)}
-            </Text>
+        <Text
+          style={
+            styles.duration
+          }
+        >
+          ⏱{' '}
+          {
+            service.DurationMinutes
+          }{' '}
+          phút
+        </Text>
+      </View>
 
-            <Text style={styles.duration}>
-              {service.DurationMinutes} phút
-            </Text>
-          </View>
+      <View
+        style={
+          styles.serviceRight
+        }
+      >
+        <Text
+          style={
+            styles.price
+          }
+        >
+          {service.Price.toLocaleString(
+            'vi-VN',
+          )}
+          đ
+        </Text>
 
-          <View style={styles.selectButton}>
-            <Text style={styles.selectButtonText}>
-              Chọn
-            </Text>
-          </View>
-        </View>
+        <Text
+          style={
+            styles.chooseText
+          }
+        >
+          Chọn ›
+        </Text>
       </View>
     </Pressable>
   );
-}
-
-/**
- * =========================
- * EMPLOYEE ITEM
- * =========================
- */
-
-function EmployeeItem({
-  employee,
-}: {
-  employee: SalonEmployee;
-}) {
-  return (
-    <View style={styles.employeeCard}>
-      {employee.AvatarUrl ? (
-        <Image
-          source={{
-            uri: employee.AvatarUrl,
-          }}
-          style={styles.avatar}
-        />
-      ) : (
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>
-            {employee.FullName
-              .charAt(0)
-              .toUpperCase()}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.employeeInfo}>
-        <Text style={styles.employeeName}>
-          {employee.FullName}
-        </Text>
-
-        {employee.Specialization && (
-          <Text style={styles.specialization}>
-            {employee.Specialization}
-          </Text>
-        )}
-
-        {employee.Phone && (
-          <Text style={styles.employeePhone}>
-            {employee.Phone}
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-}
-
-/**
- * =========================
- * FORMAT MONEY
- * =========================
- */
-
-function formatMoney(value: number) {
-  return `${Number(value).toLocaleString(
-    'vi-VN',
-  )} đ`;
 }
 
 /**
@@ -463,413 +684,306 @@ function formatMoney(value: number) {
  * =========================
  */
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8F7FC',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        '#F8F7FC',
+    },
 
-  itemPressed: {
-  opacity: 0.7,
-},
+    content: {
+      padding: 16,
+      paddingBottom: 40,
+    },
 
-selectButton: {
-  minWidth: 68,
-  height: 36,
-  paddingHorizontal: 14,
-  borderRadius: 10,
-  backgroundColor: '#8B5CF6',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+    center: {
+      flex: 1,
+      justifyContent:
+        'center',
+      alignItems: 'center',
+      padding: 24,
+      backgroundColor:
+        '#F8F7FC',
+    },
 
-selectButtonText: {
-  color: '#FFFFFF',
-  fontSize: 14,
-  fontWeight: '700',
-},
+    loadingText: {
+      marginTop: 12,
+      fontSize: 15,
+      color: '#6B7280',
+    },
 
-  content: {
-    paddingBottom: 40,
-  },
+    backRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
 
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F7FC',
-  },
+    backIcon: {
+      fontSize: 34,
+      color: '#1F2937',
+      marginRight: 8,
+    },
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666666',
-  },
+    backLabel: {
+      fontSize: 15,
+      color: '#6B7280',
+    },
 
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#F8F7FC',
-  },
+    salonImage: {
+      width: '100%',
+      height: 210,
+      borderRadius: 18,
+      marginBottom: 14,
+    },
 
-  errorTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#222222',
-    marginBottom: 10,
-  },
+    imagePlaceholder: {
+      width: '100%',
+      height: 210,
+      borderRadius: 18,
+      marginBottom: 14,
+      justifyContent:
+        'center',
+      alignItems: 'center',
+      backgroundColor:
+        '#EDE9FE',
+    },
 
-  errorMessage: {
-    fontSize: 15,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
+    placeholderText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#8B5CF6',
+    },
 
-  retryButton: {
-    width: '100%',
-    maxWidth: 320,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#8B5CF6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+    card: {
+      backgroundColor:
+        '#FFFFFF',
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 14,
+      elevation: 2,
+    },
 
-  retryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+    salonName: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: '#1F2937',
+    },
 
-  backButton: {
-    width: '100%',
-    maxWidth: 320,
-    height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#8B5CF6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    address: {
+      marginTop: 10,
+      fontSize: 14,
+      color: '#6B7280',
+    },
 
-  backText: {
-    color: '#8B5CF6',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+    phone: {
+      marginTop: 7,
+      fontSize: 14,
+      color: '#6B7280',
+    },
 
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 14,
-  },
+    description: {
+      marginTop: 12,
+      fontSize: 14,
+      lineHeight: 21,
+      color: '#4B5563',
+    },
 
-  backIcon: {
-    fontSize: 34,
-    lineHeight: 34,
-    color: '#222222',
-    marginRight: 8,
-  },
+    statsRow: {
+      flexDirection: 'row',
+      marginTop: 18,
+      borderTopWidth: 1,
+      borderTopColor:
+        '#E5E7EB',
+      paddingTop: 16,
+    },
 
-  backLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#555555',
-  },
+    stat: {
+      flex: 1,
+      alignItems: 'center',
+    },
 
-  salonImage: {
-    width: '100%',
-    height: 230,
-  },
+    statValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#8B5CF6',
+    },
 
-  imagePlaceholder: {
-    width: '100%',
-    height: 230,
-    backgroundColor: '#EDE9FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    statLabel: {
+      marginTop: 4,
+      fontSize: 12,
+      color: '#6B7280',
+    },
 
-  placeholderText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#8B5CF6',
-  },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent:
+        'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
 
-  mainCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 22,
-    marginBottom: 12,
-  },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#1F2937',
+    },
 
-  salonName: {
-    fontSize: 25,
-    fontWeight: '800',
-    color: '#222222',
-    marginBottom: 10,
-  },
+    sectionCount: {
+      minWidth: 28,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      textAlign: 'center',
+      borderRadius: 14,
+      backgroundColor:
+        '#EDE9FE',
+      color: '#8B5CF6',
+      fontWeight: '700',
+    },
 
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
+    emptyText: {
+      color: '#6B7280',
+      fontSize: 14,
+    },
 
-  star: {
-    fontSize: 19,
-    color: '#F59E0B',
-    marginRight: 5,
-  },
+    serviceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 14,
+      borderTopWidth: 1,
+      borderTopColor:
+        '#F3F4F6',
+    },
 
-  rating: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#222222',
-  },
+    serviceInfo: {
+      flex: 1,
+      paddingRight: 10,
+    },
 
-  reviewCount: {
-    fontSize: 14,
-    color: '#777777',
-    marginLeft: 5,
-  },
+    serviceName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#1F2937',
+    },
 
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
+    serviceDescription: {
+      marginTop: 5,
+      fontSize: 13,
+      lineHeight: 18,
+      color: '#6B7280',
+    },
 
-  infoIcon: {
-    width: 28,
-    fontSize: 18,
-  },
+    duration: {
+      marginTop: 6,
+      fontSize: 12,
+      color: '#6B7280',
+    },
 
-  infoText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 21,
-    color: '#444444',
-  },
+    serviceRight: {
+      alignItems: 'flex-end',
+    },
 
-  descriptionBox: {
-    marginTop: 10,
-    paddingTop: 18,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
+    price: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#8B5CF6',
+    },
 
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: '#222222',
-  },
+    chooseText: {
+      marginTop: 6,
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#8B5CF6',
+    },
 
-  description: {
-    marginTop: 10,
-    fontSize: 15,
-    lineHeight: 23,
-    color: '#666666',
-  },
+    employeeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor:
+        '#F3F4F6',
+    },
 
-  statsCard: {
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 12,
-  },
+    avatar: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+    },
 
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
+    avatarPlaceholder: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      justifyContent:
+        'center',
+      alignItems: 'center',
+      backgroundColor:
+        '#EDE9FE',
+    },
 
-  statNumber: {
-    fontSize: 21,
-    fontWeight: '800',
-    color: '#8B5CF6',
-  },
+    avatarText: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#8B5CF6',
+    },
 
-  statLabel: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#777777',
-  },
+    employeeInfo: {
+      marginLeft: 12,
+      flex: 1,
+    },
 
-  statDivider: {
-    width: 1,
-    height: 38,
-    backgroundColor: '#EEEEEE',
-  },
+    employeeName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#1F2937',
+    },
 
-  sectionCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    marginBottom: 12,
-  },
+    specialization: {
+      marginTop: 4,
+      fontSize: 13,
+      color: '#6B7280',
+    },
 
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+    pressed: {
+      opacity: 0.7,
+    },
 
-  sectionCount: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#EDE9FE',
-    color: '#8B5CF6',
-    textAlign: 'center',
-    paddingTop: 5,
-    fontSize: 13,
-    fontWeight: '800',
-  },
+    errorTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#1F2937',
+      textAlign: 'center',
+    },
 
-  emptyText: {
-    fontSize: 14,
-    color: '#888888',
-  },
+    errorMessage: {
+      marginTop: 10,
+      color: '#6B7280',
+      textAlign: 'center',
+    },
 
-  itemCard: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
+    primaryButton: {
+      marginTop: 20,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor:
+        '#8B5CF6',
+    },
 
-  serviceImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-  },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
 
-  servicePlaceholder: {
-    width: 90,
-    height: 90,
-    borderRadius: 12,
-    backgroundColor: '#EDE9FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    secondaryButton: {
+      marginTop: 10,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+    },
 
-  servicePlaceholderText: {
-    fontSize: 30,
-    color: '#8B5CF6',
-  },
-
-  itemContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222222',
-  },
-
-  itemDescription: {
-    marginTop: 5,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#777777',
-  },
-
-  itemBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-
-  price: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#8B5CF6',
-  },
-
-  duration: {
-    fontSize: 13,
-    color: '#777777',
-  },
-
-  employeeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-
-  avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-  },
-
-  avatarPlaceholder: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#EDE9FE',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#8B5CF6',
-  },
-
-  employeeInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-
-  employeeName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222222',
-  },
-
-  specialization: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#8B5CF6',
-  },
-
-  employeePhone: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#777777',
-  },
-
-  bookingButton: {
-    height: 54,
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderRadius: 14,
-    backgroundColor: '#8B5CF6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  bookingButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-
-  buttonPressed: {
-    opacity: 0.7,
-  },
-});
+    secondaryButtonText: {
+      color: '#6B7280',
+      fontWeight: '600',
+    },
+  });

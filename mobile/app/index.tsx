@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -5,7 +7,11 @@ import {
   Text,
 } from 'react-native';
 
-import { Redirect } from 'expo-router';
+import {
+  Redirect,
+  useRootNavigationState,
+  router,
+} from 'expo-router';
 
 import { useAuth } from '@/context/AuthContext';
 
@@ -15,45 +21,67 @@ export default function IndexScreen() {
     isAuthenticated,
   } = useAuth();
 
-  /**
-   * Đang kiểm tra token / session
-   */
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" />
+  const rootNavigationState =
+    useRootNavigationState();
 
-        <Text style={styles.loadingText}>
+  const isNavigationReady =
+    rootNavigationState?.key != null;
+
+  /**
+   * Không điều hướng trực tiếp trong render.
+   * Chờ component mount + navigation ready rồi mới replace.
+   */
+  React.useEffect(() => {
+    if (
+      isLoading ||
+      !isNavigationReady
+    ) {
+      return;
+    }
+
+    router.replace(
+      isAuthenticated
+        ? '/home'
+        : '/login',
+    );
+  }, [
+    isLoading,
+    isAuthenticated,
+    isNavigationReady,
+  ]);
+
+  if (isLoading || !isNavigationReady) {
+    return (
+      <SafeAreaView
+        style={styles.container}
+      >
+        <ActivityIndicator
+          size="large"
+        />
+
+        <Text
+          style={styles.loadingText}
+        >
           Đang kiểm tra đăng nhập...
         </Text>
       </SafeAreaView>
     );
   }
 
-  /**
-   * Chưa đăng nhập
-   * → chuyển sang Login
-   */
-  if (!isAuthenticated) {
-    return <Redirect href="/login" />;
-  }
-
-  /**
-   * Đã đăng nhập
-   * → chuyển sang Home
-   */
-  return <Redirect href="/home" />;
+  // Navigation được xử lý trong useEffect.
+  return null;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-  },
-});
+    loadingText: {
+      marginTop: 12,
+      fontSize: 16,
+    },
+  });

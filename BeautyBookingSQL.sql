@@ -538,4 +538,52 @@ VALUES
 );
 GO
 
+INSERT INTO EmployeeSchedules
+(
+    EmployeeId,
+    DayOfWeek,
+    StartTime,
+    EndTime,
+    IsWorking
+)
+SELECT
+    e.EmployeeId,
+    d.DayOfWeek,
+    CAST('08:00:00' AS time),
+    CAST('17:00:00' AS time),
+    1
+FROM Employees e
+CROSS JOIN
+(
+    SELECT 1 AS DayOfWeek
+    UNION ALL SELECT 2
+    UNION ALL SELECT 3
+    UNION ALL SELECT 4
+    UNION ALL SELECT 5
+    UNION ALL SELECT 6
+    UNION ALL SELECT 7
+) d
+WHERE e.EmployeeId IN (3, 4)
+  AND NOT EXISTS
+  (
+      SELECT 1
+      FROM EmployeeSchedules es
+      WHERE es.EmployeeId = e.EmployeeId
+        AND es.DayOfWeek = d.DayOfWeek
+  );
 
+
+
+  SELECT
+    e.EmployeeId,
+    e.FullName,
+    e.SalonId,
+    es.DayOfWeek,
+    es.StartTime,
+    es.EndTime,
+    es.IsWorking
+FROM Employees e
+LEFT JOIN EmployeeSchedules es
+    ON e.EmployeeId = es.EmployeeId
+WHERE e.EmployeeId IN (1, 2, 3, 4)
+ORDER BY e.EmployeeId, es.DayOfWeek;
