@@ -19,7 +19,8 @@ import {
   useLocalSearchParams,
 } from 'expo-router';
 
-import { getSalonEmployees } from '@/services/salonService';
+import { getSalonEmployees, getSalonById } from '@/services/salonService';
+import type { SalonDetail } from '@/types/salon';
 
 import {
   SalonEmployee,
@@ -38,6 +39,8 @@ export default function BookingEmployeeScreen() {
     employees,
     setEmployees,
   ] = useState<SalonEmployee[]>([]);
+
+  const [salonDetail, setSalonDetail] = useState<SalonDetail | null>(null);
 
   const [
     isLoading,
@@ -100,10 +103,13 @@ export default function BookingEmployeeScreen() {
           parsedSalonId,
         );
 
-        const result =
-          await getSalonEmployees(
-            parsedSalonId,
-          );
+        const [result, detailResult] = await Promise.all([
+          getSalonEmployees(parsedSalonId),
+          getSalonById(parsedSalonId),
+        ]);
+        if (detailResult.success && detailResult.data) {
+          setSalonDetail(detailResult.data);
+        }
 
         console.log(
           '👤 EMPLOYEES RESPONSE:',
@@ -281,7 +287,7 @@ export default function BookingEmployeeScreen() {
             styles.bookingInfoText
           }
         >
-          Salon: #{salonId}
+          Salon: {salonDetail?.SalonName || 'Đang tải tên salon…'}
         </Text>
 
         <Text
@@ -289,7 +295,7 @@ export default function BookingEmployeeScreen() {
             styles.bookingInfoText
           }
         >
-          Dịch vụ: #{serviceId}
+          Dịch vụ: {salonDetail?.services?.find((item) => Number(item.ServiceId) === Number(serviceId))?.ServiceName || 'Đang tải tên dịch vụ…'}
         </Text>
       </View>
 

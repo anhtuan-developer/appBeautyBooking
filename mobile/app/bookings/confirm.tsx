@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -11,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -22,6 +24,8 @@ import {
 import {
   createBooking,
 } from '@/services/bookingService';
+import { getSalonById } from '@/services/salonService';
+import type { SalonDetail } from '@/types/salon';
 
 function formatDate(
   date: string,
@@ -79,6 +83,12 @@ export default function ConfirmBookingScreen() {
     setSuccess,
   ] = useState(false);
 
+  // Ghi chú tùy chọn gửi kèm yêu cầu tạo lịch.
+  const [note, setNote] = useState('');
+  const [salonDetail, setSalonDetail] = useState<SalonDetail | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+
   const salonIdNumber = Number(
     salonId,
   );
@@ -90,6 +100,46 @@ export default function ConfirmBookingScreen() {
   const employeeIdNumber = Number(
     employeeId,
   );
+
+  // Lấy tên salon, dịch vụ và nhân viên từ API chi tiết salon.
+  // Không hiển thị ID như thể đó là tên thật.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectionDetails() {
+      if (!Number.isInteger(salonIdNumber) || salonIdNumber <= 0) return;
+
+      try {
+        setDetailsLoading(true);
+        setDetailsError('');
+        const response = await getSalonById(salonIdNumber);
+        if (!cancelled && response.success && response.data) {
+          setSalonDetail(response.data);
+        } else if (!cancelled) {
+          setDetailsError('Không lấy được thông tin lựa chọn.');
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDetailsError(error instanceof Error ? error.message : 'Không thể tải thông tin salon.');
+        }
+      } finally {
+        if (!cancelled) setDetailsLoading(false);
+      }
+    }
+
+    loadSelectionDetails();
+    return () => { cancelled = true; };
+  }, [salonIdNumber]);
+
+  const selectedService = salonDetail?.services?.find(
+    (item) => Number(item.ServiceId) === serviceIdNumber,
+  );
+  const selectedEmployee = salonDetail?.employees?.find(
+    (item) => Number(item.EmployeeId) === employeeIdNumber,
+  );
+  const salonDisplayName = salonDetail?.SalonName?.trim() || '';
+  const serviceDisplayName = selectedService?.ServiceName?.trim() || '';
+  const employeeDisplayName = selectedEmployee?.FullName?.trim() || '';
 
   const paramsValid =
     Number.isInteger(salonIdNumber) &&
@@ -196,6 +246,7 @@ export default function ConfirmBookingScreen() {
         
           endTime:
             endTime as string,
+          note: note.trim() || undefined,
         });
 
       console.log(
@@ -221,7 +272,7 @@ export default function ConfirmBookingScreen() {
             text: 'Xem lịch của tôi',
             onPress: () => {
               router.replace(
-                '/home',
+                '/bookings',
               );
             },
           },
@@ -281,16 +332,20 @@ export default function ConfirmBookingScreen() {
           <Pressable
             style={styles.primaryButton}
             onPress={() =>
-              router.replace(
-                '/home',
-              )
+              router.replace('/bookings')
             }
           >
             <Text
               style={styles.primaryButtonText}
             >
-              Về trang chủ
+              Xem lịch đặt của tôi
             </Text>
+          </Pressable>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => router.replace('/home')}
+          >
+            <Text style={styles.secondaryButtonText}>Về trang chủ</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -372,53 +427,47 @@ export default function ConfirmBookingScreen() {
             👤 Thông tin lựa chọn
           </Text>
 
-          <View
-            style={styles.row}
-          >
-            <Text
-              style={styles.label}
-            >
-              Salon ID
-            </Text>
-
-            <Text
-              style={styles.value}
-            >
-              #{salonIdNumber}
+          <View style={styles.row}>
+            <Text style={styles.label}>Salon</Text>
+            <Text style={styles.value} numberOfLines={2}>
+              {detailsLoading && !salonDisplayName ? 'Đang tải...' : salonDisplayName || 'Chưa có tên salon'}
             </Text>
           </View>
 
-          <View
-            style={styles.row}
-          >
-            <Text
-              style={styles.label}
-            >
-              Dịch vụ ID
-            </Text>
-
-            <Text
-              style={styles.value}
-            >
-              #{serviceIdNumber}
+          <View style={styles.row}>
+            <Text style={styles.label}>Dịch vụ</Text>
+            <Text style={styles.value} numberOfLines={2}>
+              {detailsLoading && !serviceDisplayName ? 'Đang tải...' : serviceDisplayName || 'Không tìm thấy dịch vụ'}
             </Text>
           </View>
 
-          <View
-            style={styles.row}
-          >
-            <Text
-              style={styles.label}
-            >
-              Nhân viên ID
-            </Text>
-
-            <Text
-              style={styles.value}
-            >
-              #{employeeIdNumber}
+          <View style={styles.row}>
+            <Text style={styles.label}>Nhân viên</Text>
+            <Text style={styles.value} numberOfLines={2}>
+              {detailsLoading && !employeeDisplayName ? 'Đang tải...' : employeeDisplayName || 'Không tìm thấy nhân viên'}
             </Text>
           </View>
+          {!!detailsError && (
+            <Text style={styles.detailsError}>
+              Không tải được tên lựa chọn. Vui lòng kiểm tra kết nối rồi quay lại chọn lại nếu cần.
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.noteSection}>
+          <Text style={styles.noteLabel}>Ghi chú cho salon (không bắt buộc)</Text>
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="Ví dụ: Tôi muốn cắt tóc ngắn..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+            editable={!loading}
+            style={styles.noteInput}
+          />
+          <Text style={styles.noteCounter}>{note.length}/500</Text>
         </View>
 
         <View
@@ -493,6 +542,7 @@ export default function ConfirmBookingScreen() {
 }
 
 const styles = StyleSheet.create({
+  detailsError: { color: '#B45309', fontSize: 13, marginTop: 8, lineHeight: 18 },
   safeArea: {
     flex: 1,
     backgroundColor: '#F8FAFC',
@@ -555,6 +605,32 @@ const styles = StyleSheet.create({
     color: '#111827',
     maxWidth: '60%',
     textAlign: 'right',
+  },
+
+  noteSection: {
+    marginTop: 18,
+    marginBottom: 18,
+  },
+  noteLabel: {
+    color: '#374151',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  noteInput: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    color: '#1F2937',
+    backgroundColor: '#FFFFFF',
+  },
+  noteCounter: {
+    textAlign: 'right',
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 5,
   },
 
   warningBox: {

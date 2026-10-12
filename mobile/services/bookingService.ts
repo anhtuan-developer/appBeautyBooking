@@ -12,6 +12,7 @@ export interface CreateBookingRequest {
   bookingDate: string;
   startTime: string;
   endTime: string;
+  note?: string;
 }
 
 export interface CreateBookingData {

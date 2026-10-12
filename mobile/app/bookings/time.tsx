@@ -22,6 +22,8 @@ import {
   AvailableSlot,
   getAvailableSlots,
 } from '@/services/scheduleService';
+import { getSalonById } from '@/services/salonService';
+import type { SalonDetail } from '@/types/salon';
 
 export default function BookingTimeScreen() {
   const {
@@ -42,6 +44,8 @@ export default function BookingTimeScreen() {
   ] = useState<
     AvailableSlot[]
   >([]);
+
+  const [salonDetail, setSalonDetail] = useState<SalonDetail | null>(null);
 
   const [
     selectedSlot,
@@ -64,6 +68,18 @@ export default function BookingTimeScreen() {
     availabilityMessage,
     setAvailabilityMessage,
   ] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const id = Number(salonId);
+    if (!Number.isInteger(id) || id <= 0) return;
+    getSalonById(id)
+      .then((response) => {
+        if (!cancelled && response.success) setSalonDetail(response.data);
+      })
+      .catch((err) => console.warn('Không tải được tên salon/dịch vụ/nhân viên:', err));
+    return () => { cancelled = true; };
+  }, [salonId]);
 
   /**
    * =========================
@@ -505,7 +521,7 @@ export default function BookingTimeScreen() {
               styles.infoText
             }
           >
-            Salon: #{salonId}
+            Salon: {salonDetail?.SalonName || 'Đang tải tên salon…'}
           </Text>
 
           <Text
@@ -513,7 +529,7 @@ export default function BookingTimeScreen() {
               styles.infoText
             }
           >
-            Dịch vụ: #{serviceId}
+            Dịch vụ: {salonDetail?.services?.find((item) => Number(item.ServiceId) === Number(serviceId))?.ServiceName || 'Đang tải tên dịch vụ…'}
           </Text>
 
           <Text
@@ -521,8 +537,7 @@ export default function BookingTimeScreen() {
               styles.infoText
             }
           >
-            Nhân viên: #
-            {employeeId}
+            Nhân viên: {salonDetail?.employees?.find((item) => Number(item.EmployeeId) === Number(employeeId))?.FullName || 'Đang tải tên nhân viên…'}
           </Text>
 
           <Text
