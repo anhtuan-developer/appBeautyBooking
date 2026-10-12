@@ -7,12 +7,20 @@ import { Platform } from 'react-native';
  * =====================================================
  */
 
-const MOBILE_API_HOST = '192.168.1.118';
+const DEFAULT_MOBILE_API_HOST = '192.168.1.118';
 
-const API_BASE_URL =
-  Platform.OS === 'web'
+// Set EXPO_PUBLIC_API_URL in mobile/.env for your own computer/network.
+// Examples:
+//   Web: http://localhost:3000/api
+//   Physical phone: http://192.168.1.x:3000/api
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+
+const API_BASE_URL = (
+  configuredApiUrl ||
+  (Platform.OS === 'web'
     ? 'http://localhost:3000/api'
-    : `http://${MOBILE_API_HOST}:3000/api`;
+    : `http://${DEFAULT_MOBILE_API_HOST}:3000/api`)
+).replace(/\/+$/, '');
 
 const TOKEN_KEY = '@BeautyBooking:accessToken';
 

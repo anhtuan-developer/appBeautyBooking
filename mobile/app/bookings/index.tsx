@@ -374,12 +374,14 @@ export default function MyBookingsScreen() {
             item.BookingId,
           );
 
-          /**
-           * Chưa chuyển sang
-           * màn hình detail ở bước này.
-           *
-           * Sẽ làm ở bước tiếp theo.
-           */
+          router.push({
+            pathname: '/bookings/[bookingId]',
+            params: {
+              bookingId: String(
+                item.BookingId,
+              ),
+            },
+          });
         }}
       >
         {/* HEADER */}

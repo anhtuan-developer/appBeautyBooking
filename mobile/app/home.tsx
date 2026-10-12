@@ -228,6 +228,47 @@ export default function HomeScreen() {
           </Pressable>
 
           {/* =========================
+              TIỆN ÍCH TÀI KHOẢN
+          ========================= */}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12, marginBottom: 18 }}>
+            <Pressable
+              style={({ pressed }) => [{
+                flex: 1, minHeight: 88, borderRadius: 16, padding: 14,
+                backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E9E2F5',
+                justifyContent: 'center', opacity: pressed ? 0.75 : 1,
+              }]}
+              onPress={() => router.push('/bookings')}
+            >
+              <Text style={{ fontSize: 22 }}>📅</Text>
+              <Text style={{ color: '#211B2D', fontWeight: '800', marginTop: 8 }}>Lịch đặt của tôi</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [{
+                flex: 1, minHeight: 88, borderRadius: 16, padding: 14,
+                backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E9E2F5',
+                justifyContent: 'center', opacity: pressed ? 0.75 : 1,
+              }]}
+              onPress={() => router.push('/notifications')}
+            >
+              <Text style={{ fontSize: 22 }}>🔔</Text>
+              <Text style={{ color: '#211B2D', fontWeight: '800', marginTop: 8 }}>Thông báo</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [{
+              minHeight: 52, borderRadius: 14, paddingHorizontal: 16,
+              backgroundColor: '#EEE7FF', flexDirection: 'row',
+              alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 16, opacity: pressed ? 0.75 : 1,
+            }]}
+            onPress={() => router.push('/profile')}
+          >
+            <Text style={{ color: '#6D3DE0', fontWeight: '800' }}>👤  Hồ sơ & bảo mật</Text>
+            <Text style={{ color: '#6D3DE0', fontSize: 20 }}>›</Text>
+          </Pressable>
+
+          {/* =========================
               ĐĂNG XUẤT
           ========================= */}
           <Pressable

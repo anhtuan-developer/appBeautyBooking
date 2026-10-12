@@ -183,3 +183,95 @@ export async function getMyBookings(
     endpoint,
   );
 }
+
+/**
+ * =========================
+ * BOOKING DETAIL
+ * =========================
+ */
+
+export interface BookingDetail extends Booking {
+  SalonAddress?: string | null;
+  SalonPhone?: string | null;
+
+  ServiceDescription?: string | null;
+  ServiceImageUrl?: string | null;
+
+  EmployeePhone?: string | null;
+  EmployeeAvatarUrl?: string | null;
+  Specialization?: string | null;
+}
+
+export interface BookingDetailResponse {
+  success: boolean;
+  message?: string;
+  data: BookingDetail;
+}
+
+/**
+ * =========================
+ * CANCEL BOOKING
+ * =========================
+ */
+
+export interface CancelBookingData {
+  booking: {
+    BookingId: string;
+    UserId: number;
+    SalonId: number;
+    ServiceId: number;
+    EmployeeId: number;
+    BookingDate: string;
+    StartTime: string;
+    EndTime: string;
+    Status: string;
+    Note?: string | null;
+    CreatedAt?: string;
+    UpdatedAt?: string | null;
+  };
+}
+
+export interface CancelBookingResponse {
+  success: boolean;
+  message: string;
+  data?: CancelBookingData;
+}
+
+/**
+ * =========================
+ * GET BOOKING DETAIL
+ * =========================
+ */
+
+export async function getBookingDetail(
+  bookingId: number,
+): Promise<BookingDetailResponse> {
+  console.log(
+    '📄 GET /api/bookings/' +
+      bookingId,
+  );
+
+  return api.get<BookingDetailResponse>(
+    `/bookings/${bookingId}`,
+  );
+}
+
+/**
+ * =========================
+ * CANCEL BOOKING
+ * =========================
+ */
+
+export async function cancelBooking(
+  bookingId: number,
+): Promise<CancelBookingResponse> {
+  console.log(
+    '❌ PATCH /api/bookings/' +
+      bookingId +
+      '/cancel',
+  );
+
+  return api.patch<CancelBookingResponse>(
+    `/bookings/${bookingId}/cancel`,
+  );
+}
