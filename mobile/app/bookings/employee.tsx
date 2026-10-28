@@ -94,15 +94,8 @@ export default function BookingEmployeeScreen() {
         setIsLoading(true);
         setError('');
 
-        console.log(
-          '👤 LOAD SALON EMPLOYEES',
-        );
-
-        console.log(
-          '➡️ salonId:',
-          parsedSalonId,
-        );
-
+        
+        
         const [result, detailResult] = await Promise.all([
           getSalonEmployees(parsedSalonId),
           getSalonById(parsedSalonId),
@@ -111,15 +104,7 @@ export default function BookingEmployeeScreen() {
           setSalonDetail(detailResult.data);
         }
 
-        console.log(
-          '👤 EMPLOYEES RESPONSE:',
-          JSON.stringify(
-            result,
-            null,
-            2,
-          ),
-        );
-
+        
         setEmployees(
           result.data || [],
         );
@@ -155,26 +140,15 @@ export default function BookingEmployeeScreen() {
    */
   if (isLoading) {
     return (
-      <View
-        style={
-          styles.center
-        }
-      >
-        <ActivityIndicator
-          size="large"
-        />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
 
-        <Text
-          style={
-            styles.loadingText
-          }
-        >
+        <Text style={styles.loadingText}>
           Đang tải nhân viên...
         </Text>
       </View>
     );
   }
-
   /**
    * =========================
    * ERROR - MISSING PARAMS
@@ -373,33 +347,12 @@ export default function BookingEmployeeScreen() {
                   employee
                 }
                 onSelect={() => {
-                  console.log(
-                    '========================================',
-                  );
-
-                  console.log(
-                    '✅ SELECT EMPLOYEE',
-                  );
-
-                  console.log(
-                    '➡️ salonId:',
-                    salonId,
-                  );
-
-                  console.log(
-                    '➡️ serviceId:',
-                    serviceId,
-                  );
-
-                  console.log(
-                    '➡️ employeeId:',
-                    employee.EmployeeId,
-                  );
-
-                  console.log(
-                    '========================================',
-                  );
-
+                  
+                  
+                  
+                  
+                  
+                  
                   router.push({
                     pathname:
                       '/bookings/date',

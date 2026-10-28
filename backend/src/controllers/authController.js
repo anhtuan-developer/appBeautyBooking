@@ -28,8 +28,8 @@ async function register(req, res) {
             return res.status(400).json({ success: false, message: "Email không hợp lệ." });
         }
 
-        if (typeof password !== "string" || password.length < 6 || password.length > 72) {
-            return res.status(400).json({ success: false, message: "Mật khẩu phải từ 6 đến 72 ký tự." });
+        if (typeof password !== "string" || password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+            return res.status(400).json({ success: false, message: "Mật khẩu phải có ít nhất 8 ký tự và không vượt quá 72 byte UTF-8." });
         }
 
         let normalizedPhone = null;
@@ -65,8 +65,11 @@ async function login(req, res) {
         const { email, password } = req.body || {};
         const normalizedEmail = normalizeEmail(email);
 
-        if (!normalizedEmail || !password) {
+        if (!normalizedEmail || typeof password !== "string" || password.length === 0) {
             return res.status(400).json({ success: false, message: "Email và password là bắt buộc." });
+        }
+        if (Buffer.byteLength(password, "utf8") > 72) {
+            return res.status(400).json({ success: false, message: "Mật khẩu không được vượt quá 72 byte UTF-8." });
         }
         if (!isValidEmail(normalizedEmail)) {
             return res.status(400).json({ success: false, message: "Email không hợp lệ." });
@@ -156,8 +159,8 @@ async function changePassword(req, res) {
         if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
             return res.status(400).json({ success: false, message: "currentPassword và newPassword là bắt buộc." });
         }
-        if (newPassword.length < 6 || newPassword.length > 72) {
-            return res.status(400).json({ success: false, message: "Mật khẩu mới phải từ 6 đến 72 ký tự." });
+        if (newPassword.length < 8 || Buffer.byteLength(newPassword, "utf8") > 72) {
+            return res.status(400).json({ success: false, message: "Mật khẩu mới phải có ít nhất 8 ký tự và không vượt quá 72 byte UTF-8." });
         }
         if (currentPassword === newPassword) {
             return res.status(400).json({ success: false, message: "Mật khẩu mới phải khác mật khẩu hiện tại." });

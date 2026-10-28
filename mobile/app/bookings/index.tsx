@@ -252,33 +252,16 @@ export default function MyBookingsScreen() {
 
         setError(null);
 
-        console.log(
-          '========================================',
-        );
-
-        console.log(
-          '📋 LOAD MY BOOKINGS',
-        );
-
-        console.log(
-          '========================================',
-        );
-
+        
+        
+        
         const response =
           await getMyBookings(
             1,
             10,
           );
 
-        console.log(
-          '📋 MY BOOKINGS RESPONSE:',
-          JSON.stringify(
-            response,
-            null,
-            2,
-          ),
-        );
-
+        
         if (
           response.success
         ) {
@@ -369,11 +352,7 @@ export default function MyBookingsScreen() {
         activeOpacity={0.85}
         style={styles.card}
         onPress={() => {
-          console.log(
-            '➡️ Selected booking:',
-            item.BookingId,
-          );
-
+          
           router.push({
             pathname: '/bookings/[bookingId]',
             params: {

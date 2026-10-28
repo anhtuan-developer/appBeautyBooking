@@ -119,19 +119,6 @@ export interface MyBookingsResponse {
 export async function createBooking(
   data: CreateBookingRequest,
 ): Promise<CreateBookingResponse> {
-  console.log(
-    '📤 POST /api/bookings',
-  );
-
-  console.log(
-    '📦 Booking body:',
-    JSON.stringify(
-      data,
-      null,
-      2,
-    ),
-  );
-
   return api.post<CreateBookingResponse>(
     '/bookings',
     data,
@@ -171,15 +158,8 @@ export async function getMyBookings(
   const endpoint =
     `/bookings/my-bookings?${params.toString()}`;
 
-  console.log(
-    '📋 GET /api/bookings/my-bookings',
-  );
-
-  console.log(
-    '🌐 Endpoint:',
-    endpoint,
-  );
-
+  
+  
   return api.get<MyBookingsResponse>(
     endpoint,
   );
@@ -247,11 +227,7 @@ export interface CancelBookingResponse {
 export async function getBookingDetail(
   bookingId: number,
 ): Promise<BookingDetailResponse> {
-  console.log(
-    '📄 GET /api/bookings/' +
-      bookingId,
-  );
-
+  
   return api.get<BookingDetailResponse>(
     `/bookings/${bookingId}`,
   );
@@ -266,12 +242,7 @@ export async function getBookingDetail(
 export async function cancelBooking(
   bookingId: number,
 ): Promise<CancelBookingResponse> {
-  console.log(
-    '❌ PATCH /api/bookings/' +
-      bookingId +
-      '/cancel',
-  );
-
+  
   return api.patch<CancelBookingResponse>(
     `/bookings/${bookingId}/cancel`,
   );

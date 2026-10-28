@@ -74,7 +74,7 @@ export default function ProfileScreen() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      Alert.alert('Thành công', 'Mật khẩu đã được thay đổi.');
+      Alert.alert('Thành công', 'Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.', [{ text: 'Đăng nhập', onPress: () => router.replace('/login') }]);
     } catch (e) {
       Alert.alert('Không thể đổi mật khẩu', e instanceof Error ? e.message : 'Vui lòng thử lại.');
     } finally {

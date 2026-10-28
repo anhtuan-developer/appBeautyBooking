@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const { randomUUID } = require("node:crypto");
 require("dotenv").config();
-
-const { poolPromise } = require("./config/database");
 
 const authRoutes = require("./routes/authRoutes");
 const salonRoutes = require("./routes/salonRoutes");
@@ -16,11 +15,35 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.disable("x-powered-by");
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32 || process.env.JWT_SECRET === "replace-with-a-long-random-secret") {
+    console.error("Configuration error: set JWT_SECRET to a unique random value of at least 32 characters in backend/.env.");
+    process.exit(1);
+}
+
 const corsOrigin = String(process.env.CORS_ORIGIN || "").trim();
-app.use(cors(corsOrigin ? { origin: corsOrigin.split(",").map((value) => value.trim()).filter(Boolean) } : undefined));
+const allowedOrigins = corsOrigin.split(",").map((value) => value.trim()).filter(Boolean);
+if (process.env.NODE_ENV === "production" && allowedOrigins.length === 0) {
+    console.error("Configuration error: CORS_ORIGIN must list allowed web origins in production. Native mobile requests without Origin remain allowed.");
+    process.exit(1);
+}
+
+const { poolPromise } = require("./config/database");
+
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+    req.requestId = randomUUID();
+    res.setHeader("X-Request-Id", req.requestId);
+    next();
+});
+app.use(cors({
+    origin(origin, callback) {
+        // React Native and other non-browser clients commonly do not send Origin.
+        if (!origin || process.env.NODE_ENV !== "production" || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error("CORS origin not allowed"));
+    }
+}));
 app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 app.get("/", (req, res) => {
     res.json({
@@ -42,6 +65,9 @@ app.get("/api/health", async (req, res) => {
 });
 
 app.get("/api/test-db", async (req, res) => {
+    if (process.env.NODE_ENV === "production") {
+        return res.status(404).json({ success: false, message: "Not found" });
+    }
     try {
         const pool = await poolPromise;
         const result = await pool.request().query("SELECT DB_NAME() AS DatabaseName");
@@ -75,11 +101,18 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-    console.error("Unhandled error:", error);
-    res.status(500).json({
-        success: false,
-        message: "Internal server error"
+    if (res.headersSent) return next(error);
+    // Keep sensitive request bodies and credentials out of logs.
+    console.error("Unhandled request error:", {
+        requestId: req.requestId,
+        method: req.method,
+        path: req.path,
+        message: error && error.message ? error.message : "Unknown error"
     });
+    if (error && error.message === "CORS origin not allowed") {
+        return res.status(403).json({ success: false, message: "Origin không được phép truy cập API." });
+    }
+    return res.status(500).json({ success: false, message: "Lỗi máy chủ nội bộ.", requestId: req.requestId });
 });
 
 app.listen(PORT, () => {

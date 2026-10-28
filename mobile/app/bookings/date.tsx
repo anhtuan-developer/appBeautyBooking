@@ -181,11 +181,7 @@ export default function BookingDateScreen() {
   ) => {
     setSelectedDate(date);
 
-    console.log(
-      '📅 Selected date:',
-      date,
-    );
-  };
+      };
 
   /**
    * =========================
@@ -201,38 +197,13 @@ export default function BookingDateScreen() {
         return;
       }
 
-      console.log(
-        '========================================',
-      );
-
-      console.log(
-        '➡️ CONTINUE TO TIME',
-      );
-
-      console.log(
-        '➡️ salonId:',
-        salonId,
-      );
-
-      console.log(
-        '➡️ serviceId:',
-        serviceId,
-      );
-
-      console.log(
-        '➡️ employeeId:',
-        employeeId,
-      );
-
-      console.log(
-        '➡️ date:',
-        selectedDate,
-      );
-
-      console.log(
-        '========================================',
-      );
-
+      
+      
+      
+      
+      
+      
+      
       router.push({
         pathname:
           '/bookings/time',

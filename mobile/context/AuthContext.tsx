@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
   ReactNode,
@@ -16,6 +17,7 @@ import {
 } from '@/services/authService';
 
 import {
+  ApiRequestError,
   getStoredToken,
   removeToken,
   saveToken,
@@ -40,6 +42,8 @@ interface AuthContextType {
   isLoading: boolean;
 
   isAuthenticated: boolean;
+
+  sessionUnavailable: boolean;
 
   login: (
     email: string,
@@ -69,6 +73,8 @@ interface AuthContextType {
  * =========================
  */
 
+const USER_CACHE_KEY = '@BeautyBooking:cachedUser';
+
 const AuthContext = createContext<
   AuthContextType | undefined
 >(undefined);
@@ -97,6 +103,7 @@ export function AuthProvider({
 
   const [isLoading, setIsLoading] =
     useState(true);
+  const [sessionUnavailable, setSessionUnavailable] = useState(false);
 
   const isAuthenticated =
     user !== null;
@@ -109,28 +116,39 @@ export function AuthProvider({
 
   const refreshUser = useCallback(
     async () => {
+      setSessionUnavailable(false);
       try {
         const token =
           await getStoredToken();
 
         if (!token) {
+          await AsyncStorage.removeItem(USER_CACHE_KEY);
           setUser(null);
+          setSessionUnavailable(false);
           return;
         }
 
-        const response =
-          await getMe();
-
+        const response = await getMe();
         setUser(response.data);
+        setSessionUnavailable(false);
+        await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(response.data));
       } catch (error) {
-        console.error(
-          'Restore session failed:',
-          error,
-        );
-
-        await removeToken();
-
-        setUser(null);
+        // Invalid/expired credentials are cleared; transient network/server errors
+        // retain the token and cached profile so a temporary outage doesn't log out the user.
+        if (error instanceof ApiRequestError && (error.statusCode === 401 || error.statusCode === 403)) {
+          await removeToken();
+          await AsyncStorage.removeItem(USER_CACHE_KEY);
+          setUser(null);
+          setSessionUnavailable(false);
+          return;
+        }
+        try {
+          const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
+          if (cached) setUser(JSON.parse(cached) as User);
+        } catch {
+          // Ignore invalid cached JSON; the user can retry the session check.
+        }
+        setSessionUnavailable(true);
       }
     },
     [],
@@ -186,10 +204,8 @@ export function AuthProvider({
      * Lưu JWT
      */
     await saveToken(accessToken);
-
-    /**
-     * Lưu user vào state
-     */
+    await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+    setSessionUnavailable(false);
     setUser(user);
   };
 
@@ -216,10 +232,8 @@ export function AuthProvider({
      * Xóa JWT
      */
     await removeToken();
-
-    /**
-     * Xóa user
-     */
+    await AsyncStorage.removeItem(USER_CACHE_KEY);
+    setSessionUnavailable(false);
     setUser(null);
   };
 
@@ -236,6 +250,7 @@ export function AuthProvider({
       await updateProfileApi(data);
 
     setUser(response.data);
+    await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(response.data));
   };
 
   /**
@@ -248,6 +263,11 @@ export function AuthProvider({
     data: ChangePasswordRequest,
   ) => {
     await changePasswordApi(data);
+    // Backend increments TokenVersion after password change, invalidating all JWTs.
+    await removeToken();
+    await AsyncStorage.removeItem(USER_CACHE_KEY);
+    setUser(null);
+    setSessionUnavailable(false);
   };
 
   /**
@@ -262,6 +282,7 @@ export function AuthProvider({
         user,
         isLoading,
         isAuthenticated,
+        sessionUnavailable,
 
         login,
         register,

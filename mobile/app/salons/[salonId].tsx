@@ -437,16 +437,7 @@ export default function SalonDetailScreen() {
                   service
                 }
                 onSelect={() => {
-                  console.log(
-                    '➡️ Selected service:',
-                    {
-                      salonId:
-                        salon.SalonId,
-                      serviceId:
-                        service.ServiceId,
-                    },
-                  );
-
+                  
                   router.push({
                     pathname:
                       '/bookings/employee',

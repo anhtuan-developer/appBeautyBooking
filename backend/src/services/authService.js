@@ -47,7 +47,7 @@ async function login({ email, password }) {
     const result = await pool.request()
         .input("Email", sql.VarChar(255), email)
         .query(`
-            SELECT UserId, FullName, Email, Phone, PasswordHash, Role, IsActive, CreatedAt
+            SELECT UserId, FullName, Email, Phone, PasswordHash, Role, IsActive, CreatedAt, TokenVersion
             FROM Users WHERE Email = @Email;
         `);
 
@@ -61,7 +61,7 @@ async function login({ email, password }) {
     if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET_MISSING");
 
     const token = jwt.sign(
-        { userId: user.UserId, email: user.Email, role: user.Role },
+        { userId: user.UserId, email: user.Email, role: user.Role, tokenVersion: Number(user.TokenVersion || 0) },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
@@ -87,7 +87,7 @@ async function getActiveUserForToken(userId) {
     const pool = await poolPromise;
     const result = await pool.request()
         .input("UserId", sql.Int, userId)
-        .query("SELECT UserId, Email, Role, IsActive FROM Users WHERE UserId = @UserId;");
+        .query("SELECT UserId, Email, Role, IsActive, TokenVersion FROM Users WHERE UserId = @UserId;");
     if (result.recordset.length === 0) throw new Error("USER_NOT_FOUND");
     if (!result.recordset[0].IsActive) throw new Error("ACCOUNT_DISABLED");
     return result.recordset[0];
@@ -135,10 +135,11 @@ async function changePassword(userId, currentPassword, newPassword) {
     if (!valid) throw new Error("INVALID_CURRENT_PASSWORD");
 
     const newHash = await bcrypt.hash(newPassword, 12);
-    await pool.request()
+    const updateResult = await pool.request()
         .input("UserId", sql.Int, userId)
         .input("PasswordHash", sql.VarChar(255), newHash)
-        .query("UPDATE Users SET PasswordHash = @PasswordHash WHERE UserId = @UserId AND IsActive = 1;");
+        .query("UPDATE Users SET PasswordHash = @PasswordHash, TokenVersion = TokenVersion + 1 WHERE UserId = @UserId AND IsActive = 1;");
+    if (!updateResult.rowsAffected || updateResult.rowsAffected[0] !== 1) throw new Error("USER_NOT_FOUND");
 }
 
 module.exports = {

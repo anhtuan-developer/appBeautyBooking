@@ -1,6 +1,7 @@
 const express = require("express");
 const authController = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { authRateLimit } = require("../middleware/rateLimit");
 
 const router = express.Router();
 
@@ -13,8 +14,8 @@ router.get("/register", (req, res) => {
     });
 });
 
-router.post("/register", authController.register);
-router.post("/login", authController.login);
+router.post("/register", authRateLimit, authController.register);
+router.post("/login", authRateLimit, authController.login);
 router.get("/me", authMiddleware, authController.me);
 router.patch("/profile", authMiddleware, authController.updateProfile);
 router.patch("/change-password", authMiddleware, authController.changePassword);

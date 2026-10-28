@@ -1,7 +1,18 @@
+# Dependencies and build output
 node_modules/
+.expo/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+
+# Local secrets / machine-specific settings
 .env
 .env.*
 !.env.example
-*.log
-.expo/
-.DS_Store
+
+# Never package local environment files or temporary source artifacts
+backend/.env
+backend/src/**/*.tmp
+mobile/package*.backup

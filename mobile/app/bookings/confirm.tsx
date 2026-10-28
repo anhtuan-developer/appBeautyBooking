@@ -188,48 +188,15 @@ export default function ConfirmBookingScreen() {
     try {
       setLoading(true);
 
-      console.log(
-        '========================================',
-      );
-
-      console.log(
-        '📝 CONFIRM BOOKING',
-      );
-
-      console.log(
-        '➡️ salonId:',
-        salonIdNumber,
-      );
-
-      console.log(
-        '➡️ serviceId:',
-        serviceIdNumber,
-      );
-
-      console.log(
-        '➡️ employeeId:',
-        employeeIdNumber,
-      );
-
-      console.log(
-        '➡️ date:',
-        date,
-      );
-
-      console.log(
-        '➡️ startTime:',
-        startTime,
-      );
-
-      console.log(
-        '➡️ endTime:',
-        endTime,
-      );
-
-      console.log(
-        '========================================',
-      );
-
+      
+      
+      
+      
+      
+      
+      
+      
+      
       const response =
         await createBooking({
           employeeId:
@@ -249,11 +216,7 @@ export default function ConfirmBookingScreen() {
           note: note.trim() || undefined,
         });
 
-      console.log(
-        '📦 CREATE BOOKING RESPONSE:',
-        response,
-      );
-
+      
       if (!response.success) {
         throw new Error(
           response.message ||

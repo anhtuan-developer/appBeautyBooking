@@ -24,6 +24,9 @@ async function authMiddleware(req, res, next) {
         }
 
         const currentUser = await authService.getActiveUserForToken(decoded.userId);
+        if (Number(decoded.tokenVersion || 0) !== Number(currentUser.TokenVersion || 0)) {
+            return res.status(401).json({ success: false, message: "Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại." });
+        }
         req.user = {
             userId: currentUser.UserId,
             email: currentUser.Email,
@@ -40,7 +43,11 @@ async function authMiddleware(req, res, next) {
         if (error.message === "USER_NOT_FOUND") {
             return res.status(401).json({ success: false, message: "Tài khoản không còn tồn tại." });
         }
-        return res.status(401).json({ success: false, message: "Access token không hợp lệ." });
+        if (error.name === "JsonWebTokenError" || error.name === "NotBeforeError") {
+            return res.status(401).json({ success: false, message: "Access token không hợp lệ." });
+        }
+        console.error("Authentication middleware error:", error.message);
+        return res.status(503).json({ success: false, message: "Không thể xác minh phiên đăng nhập lúc này. Vui lòng thử lại." });
     }
 }
 

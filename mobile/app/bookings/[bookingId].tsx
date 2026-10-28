@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -24,6 +25,7 @@ import {
   BookingDetail,
   getBookingDetail,
 } from '@/services/bookingService';
+import { createReview, getMyReviews } from '@/services/reviewService';
 
 /**
  * =========================
@@ -189,6 +191,10 @@ export default function BookingDetailScreen() {
     cancelling,
     setCancelling,
   ] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const [
     error,
@@ -218,33 +224,15 @@ export default function BookingDetailScreen() {
           setLoading(true);
           setError('');
 
-          console.log(
-            '========================================',
-          );
-
-          console.log(
-            '📄 LOAD BOOKING DETAIL',
-          );
-
-          console.log(
-            '➡️ bookingId:',
-            parsedBookingId,
-          );
-
+          
+          
+          
           const response =
             await getBookingDetail(
               parsedBookingId,
             );
 
-          console.log(
-            '📄 BOOKING DETAIL RESPONSE:',
-            JSON.stringify(
-              response,
-              null,
-              2,
-            ),
-          );
-
+          
           if (
             !response.success ||
             !response.data
@@ -255,9 +243,21 @@ export default function BookingDetailScreen() {
             );
           }
 
-          setBooking(
-            response.data,
-          );
+          setBooking(response.data);
+          // Best-effort check so an existing review is not offered again after reopening the screen.
+          if (response.data.Status === 'COMPLETED') {
+            try {
+              const reviewsResponse = await getMyReviews();
+              const alreadyReviewed = reviewsResponse.data.items.some(
+                (review) => Number(review.BookingId) === Number(response.data.BookingId),
+              );
+              setReviewSubmitted(alreadyReviewed);
+            } catch {
+              // Booking detail remains usable if loading review history fails.
+            }
+          } else {
+            setReviewSubmitted(false);
+          }
         } catch (err) {
           console.error(
             '❌ Load booking detail failed:',
@@ -329,19 +329,9 @@ export default function BookingDetailScreen() {
       try {
         setCancelling(true);
 
-        console.log(
-          '========================================',
-        );
-
-        console.log(
-          '❌ CANCEL BOOKING',
-        );
-
-        console.log(
-          '➡️ bookingId:',
-          booking.BookingId,
-        );
-
+        
+        
+        
         const response =
           await cancelBooking(
             Number(
@@ -349,15 +339,7 @@ export default function BookingDetailScreen() {
             ),
           );
 
-        console.log(
-          '❌ CANCEL BOOKING RESPONSE:',
-          JSON.stringify(
-            response,
-            null,
-            2,
-          ),
-        );
-
+        
         if (
           !response.success
         ) {
@@ -921,6 +903,55 @@ export default function BookingDetailScreen() {
           </View>
         )}
 
+
+        {booking.Status === 'COMPLETED' && !reviewSubmitted && (
+          <View style={styles.reviewCard}>
+            <Text style={styles.cardTitle}>Đánh giá dịch vụ</Text>
+            <Text style={styles.reviewHint}>Chỉ có thể đánh giá sau khi lịch hẹn hoàn thành.</Text>
+            <View style={styles.ratingRow}>
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <Pressable key={rating} onPress={() => setReviewRating(rating)} accessibilityLabel={`${rating} sao`}>
+                  <Text style={[styles.ratingStar, rating <= reviewRating && styles.ratingStarSelected]}>★</Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              placeholder="Chia sẻ trải nghiệm của bạn (không bắt buộc)"
+              multiline
+              maxLength={1000}
+              style={styles.reviewInput}
+              textAlignVertical="top"
+            />
+            <Pressable
+              disabled={submittingReview}
+              style={[styles.reviewButton, submittingReview && styles.disabledButton]}
+              onPress={async () => {
+                if (submittingReview || !booking) return;
+                try {
+                  setSubmittingReview(true);
+                  const result = await createReview(Number(booking.BookingId), reviewRating, reviewComment);
+                  if (!result.success) throw new Error(result.message || 'Không thể gửi đánh giá.');
+                  setReviewSubmitted(true);
+                  Alert.alert('Cảm ơn bạn', 'Đánh giá đã được gửi thành công.');
+                } catch (reviewError) {
+                  Alert.alert('Không thể gửi đánh giá', reviewError instanceof Error ? reviewError.message : 'Vui lòng thử lại.');
+                } finally {
+                  setSubmittingReview(false);
+                }
+              }}
+            >
+              <Text style={styles.reviewButtonText}>{submittingReview ? 'Đang gửi…' : 'Gửi đánh giá'}</Text>
+            </Pressable>
+          </View>
+        )}
+        {reviewSubmitted && (
+          <View style={styles.reviewCard}>
+            <Text style={styles.reviewSuccess}>✓ Bạn đã gửi đánh giá cho lịch hẹn này.</Text>
+          </View>
+        )}
+
         {/* CANCEL */}
 
         {booking.Status ===
@@ -1232,4 +1263,13 @@ const styles =
     disabledButton: {
       opacity: 0.55,
     },
+    reviewCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#E5E7EB' },
+    reviewHint: { color: '#6B7280', marginTop: 0, marginBottom: 8, fontSize: 13 },
+    ratingRow: { flexDirection: 'row', gap: 10, marginVertical: 8 },
+    ratingStar: { fontSize: 32, color: '#D1D5DB' },
+    ratingStarSelected: { color: '#F59E0B' },
+    reviewInput: { minHeight: 90, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 12, color: '#111827' },
+    reviewButton: { backgroundColor: '#8B5CF6', borderRadius: 10, padding: 13, alignItems: 'center', marginTop: 12 },
+    reviewButtonText: { color: '#FFFFFF', fontWeight: '700' },
+    reviewSuccess: { color: '#047857', fontWeight: '600' },
   });

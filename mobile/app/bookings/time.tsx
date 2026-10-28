@@ -188,38 +188,13 @@ export default function BookingTimeScreen() {
         }
 
         try {
-          console.log(
-            '========================================',
-          );
-
-          console.log(
-            '🕐 LOAD AVAILABLE SLOTS',
-          );
-
-          console.log(
-            '➡️ salonId:',
-            parsedSalonId,
-          );
-
-          console.log(
-            '➡️ serviceId:',
-            parsedServiceId,
-          );
-
-          console.log(
-            '➡️ employeeId:',
-            parsedEmployeeId,
-          );
-
-          console.log(
-            '➡️ date:',
-            date,
-          );
-
-          console.log(
-            '========================================',
-          );
-
+          
+          
+          
+          
+          
+          
+          
           const result =
             await getAvailableSlots(
               parsedEmployeeId,
@@ -227,15 +202,7 @@ export default function BookingTimeScreen() {
               date,
             );
 
-          console.log(
-            '🕐 AVAILABLE SLOTS RESPONSE:',
-            JSON.stringify(
-              result,
-              null,
-              2,
-            ),
-          );
-
+          
           const data =
             result.data;
 
@@ -315,11 +282,7 @@ export default function BookingTimeScreen() {
         slot,
       );
 
-      console.log(
-        '🕐 Selected slot:',
-        slot,
-      );
-    };
+          };
 
   /**
    * =========================
@@ -339,48 +302,15 @@ export default function BookingTimeScreen() {
         return;
       }
 
-      console.log(
-        '========================================',
-      );
-
-      console.log(
-        '➡️ CONTINUE TO CONFIRM BOOKING',
-      );
-
-      console.log(
-        '➡️ salonId:',
-        salonId,
-      );
-
-      console.log(
-        '➡️ serviceId:',
-        serviceId,
-      );
-
-      console.log(
-        '➡️ employeeId:',
-        employeeId,
-      );
-
-      console.log(
-        '➡️ date:',
-        date,
-      );
-
-      console.log(
-        '➡️ startTime:',
-        selectedSlot.startTime,
-      );
-
-      console.log(
-        '➡️ endTime:',
-        selectedSlot.endTime,
-      );
-
-      console.log(
-        '========================================',
-      );
-
+      
+      
+      
+      
+      
+      
+      
+      
+      
       router.push({
         pathname:
           '/bookings/confirm',

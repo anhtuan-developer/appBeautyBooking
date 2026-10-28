@@ -17,6 +17,8 @@ CREATE TABLE Users
 
     PasswordHash VARCHAR(255) NOT NULL,
 
+    TokenVersion INT NOT NULL CONSTRAINT DF_Users_TokenVersion DEFAULT 0,
+
     Role VARCHAR(20) NOT NULL
         CONSTRAINT CK_Users_Role
         CHECK (Role IN ('CUSTOMER', 'SALON', 'ADMIN')),

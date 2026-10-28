@@ -2,13 +2,13 @@ import React from 'react';
 
 import {
   ActivityIndicator,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
 } from 'react-native';
 
 import {
-  Redirect,
   useRootNavigationState,
   router,
 } from 'expo-router';
@@ -19,6 +19,9 @@ export default function IndexScreen() {
   const {
     isLoading,
     isAuthenticated,
+    sessionUnavailable,
+    refreshUser,
+    logout,
   } = useAuth();
 
   const rootNavigationState =
@@ -34,6 +37,7 @@ export default function IndexScreen() {
   React.useEffect(() => {
     if (
       isLoading ||
+      sessionUnavailable ||
       !isNavigationReady
     ) {
       return;
@@ -47,8 +51,24 @@ export default function IndexScreen() {
   }, [
     isLoading,
     isAuthenticated,
+    sessionUnavailable,
     isNavigationReady,
   ]);
+
+  if (sessionUnavailable && !isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorTitle}>Không thể kiểm tra phiên đăng nhập</Text>
+        <Text style={styles.loadingText}>Có thể máy chủ hoặc mạng đang tạm thời không khả dụng. Phiên đăng nhập đã được giữ lại.</Text>
+        <Pressable style={styles.button} onPress={() => void refreshUser()}>
+          <Text style={styles.buttonText}>Thử lại</Text>
+        </Pressable>
+        <Pressable style={styles.secondaryButton} onPress={() => void logout()}>
+          <Text style={styles.secondaryButtonText}>Đăng xuất</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   if (isLoading || !isNavigationReady) {
     return (
@@ -82,6 +102,13 @@ const styles =
 
     loadingText: {
       marginTop: 12,
+      marginHorizontal: 24,
+      textAlign: 'center',
       fontSize: 16,
     },
+    errorTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center', marginHorizontal: 24 },
+    button: { marginTop: 20, backgroundColor: '#8B5CF6', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
+    buttonText: { color: '#FFFFFF', fontWeight: '700' },
+    secondaryButton: { marginTop: 12, paddingHorizontal: 28, paddingVertical: 12 },
+    secondaryButtonText: { color: '#8B5CF6', fontWeight: '600' },
   });

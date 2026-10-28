@@ -120,11 +120,11 @@ export default function RegisterScreen() {
     }
 
     if (
-      password.length < 6 ||
+      password.length < 8 ||
       password.length > 72
     ) {
       setError(
-        'Mật khẩu phải từ 6 đến 72 ký tự.',
+        'Mật khẩu phải có ít nhất 8 ký tự và không vượt quá 72 ký tự.',
       );
       return;
     }
@@ -297,7 +297,7 @@ export default function RegisterScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Ít nhất 6 ký tự"
+                placeholder="Ít nhất 8 ký tự"
                 placeholderTextColor="#999999"
                 value={password}
                 onChangeText={setPassword}
